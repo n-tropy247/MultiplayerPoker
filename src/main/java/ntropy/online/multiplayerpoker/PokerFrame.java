@@ -77,9 +77,7 @@ public final class PokerFrame extends JPanel {
                     break;
                 }
             }
-        } catch (ClassNotFoundException | IllegalAccessException
-                | InstantiationException
-                | UnsupportedLookAndFeelException exe) {
+        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | UnsupportedLookAndFeelException exe) {
             System.err.println("Nimbus unavailable: " + exe);
         }
         mainFrame = new JFrame("Poker Client");
@@ -118,15 +116,25 @@ public final class PokerFrame extends JPanel {
      */
     private void doDrawing(final Graphics g) {
         g.setColor(Color.red);
-        if (rectActive && !rectFill) {
-            g.drawRect(RECT_X, RECT_Y, RECT_WIDTH, RECT_HEIGHT);
-        } else if (rectFill) {
-            g.clearRect(RECT_X, RECT_Y, RECT_WIDTH, RECT_HEIGHT);
-            g.fillRect(RECT_X, RECT_Y, RECT_WIDTH, RECT_HEIGHT);
-        } else {
-            g.setColor(mainFrame.getBackground());
-            g.fillRect(RECT_X, RECT_Y, RECT_WIDTH, RECT_HEIGHT);
+        final int gridInc = 20;
+        for (int j = 0; j < FRAME_WIDTH; j += gridInc) {
+            g.drawLine(j, 0, j, FRAME_HEIGHT);
         }
+        for (int j = 0; j < FRAME_HEIGHT; j += gridInc) {
+            g.drawLine(0, j, FRAME_WIDTH, j);
+        }
+        g.setColor(Color.green);
+        g.drawLine(0, FRAME_HEIGHT / 2, FRAME_WIDTH, FRAME_HEIGHT / 2);
+        g.drawLine(FRAME_WIDTH / 2, 0, FRAME_WIDTH / 2, FRAME_HEIGHT);
+//        if (rectActive && !rectFill) {
+//            g.drawRect(RECT_X, RECT_Y, RECT_WIDTH, RECT_HEIGHT);
+//        } else if (rectFill) {
+//            g.clearRect(RECT_X, RECT_Y, RECT_WIDTH, RECT_HEIGHT);
+//            g.fillRect(RECT_X, RECT_Y, RECT_WIDTH, RECT_HEIGHT);
+//        } else {
+//            g.setColor(mainFrame.getBackground());
+//            g.fillRect(RECT_X, RECT_Y, RECT_WIDTH, RECT_HEIGHT);
+//        }
     }
 
     /**
