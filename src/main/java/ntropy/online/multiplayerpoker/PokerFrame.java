@@ -20,6 +20,9 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.awt.event.MouseMotionListener;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
@@ -31,7 +34,7 @@ import javax.swing.UnsupportedLookAndFeelException;
  * Multiplayer 5-card draw Poker game.
  *
  * @author NTropy
- * @version 4.7.2019
+ * @version 4.8.2019
  * @since 4.7.2019
  */
 public final class PokerFrame extends JPanel {
@@ -40,6 +43,17 @@ public final class PokerFrame extends JPanel {
      * Window dimensions.
      */
     private static final int FRAME_WIDTH = 1500, FRAME_HEIGHT = 900;
+
+    /**
+     * Test rectangle dimensions.
+     */
+    private static final int RECT_X = 100, RECT_Y = 100, RECT_WIDTH = 150,
+            RECT_HEIGHT = 350;
+
+    /**
+     * Tracks whether rectangle should be filled.
+     */
+    private static boolean rectActive = false, rectFill = false;
 
     /**
      * Main window container.
@@ -76,6 +90,8 @@ public final class PokerFrame extends JPanel {
         mainFrame.setLocationByPlatform(true);
         mainFrame.pack();
         mainFrame.setVisible(true);
+        mainFrame.addMouseListener(new MouseHandler());
+        mainFrame.addMouseMotionListener(new MouseHandler());
     }
 
     /**
@@ -102,6 +118,66 @@ public final class PokerFrame extends JPanel {
      */
     private void doDrawing(final Graphics g) {
         g.setColor(Color.red);
-        g.drawRect(100, 100, 150, 350);
+        if (rectActive && !rectFill) {
+            g.drawRect(RECT_X, RECT_Y, RECT_WIDTH, RECT_HEIGHT);
+        } else if (rectFill) {
+            g.clearRect(RECT_X, RECT_Y, RECT_WIDTH, RECT_HEIGHT);
+            g.fillRect(RECT_X, RECT_Y, RECT_WIDTH, RECT_HEIGHT);
+        } else {
+            g.setColor(mainFrame.getBackground());
+            g.fillRect(RECT_X, RECT_Y, RECT_WIDTH, RECT_HEIGHT);
+        }
+    }
+
+    /**
+     * Handles all mouse events for the frame.
+     */
+    private static class MouseHandler implements MouseListener,
+            MouseMotionListener {
+
+        /**
+         * Mouse positions.
+         */
+        private static int mouseX, mouseY;
+
+        @Override
+        public void mousePressed(final MouseEvent e) {
+            mouseX = e.getX();
+            mouseY = e.getY();
+            if (mouseX >= RECT_X && mouseX <= RECT_X + RECT_WIDTH
+                    && mouseY >= RECT_Y && mouseY <= RECT_Y + RECT_HEIGHT) {
+                rectFill = !rectFill;
+            }
+            mainFrame.repaint();
+        }
+
+        @Override
+        public void mouseReleased(final MouseEvent e) {
+        }
+
+        @Override
+        public void mouseEntered(final MouseEvent e) {
+        }
+
+        @Override
+        public void mouseExited(final MouseEvent e) {
+        }
+
+        @Override
+        public void mouseClicked(final MouseEvent e) {
+        }
+
+        @Override
+        public void mouseMoved(final MouseEvent e) {
+            mouseX = e.getX();
+            mouseY = e.getY();
+            rectActive = mouseX >= RECT_X && mouseX <= RECT_X + RECT_WIDTH
+                    && mouseY >= RECT_Y && mouseY <= RECT_Y + RECT_HEIGHT;
+            mainFrame.repaint();
+        }
+
+        @Override
+        public void mouseDragged(final MouseEvent e) {
+        }
     }
 }
