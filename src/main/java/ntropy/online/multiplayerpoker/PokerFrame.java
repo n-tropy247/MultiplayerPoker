@@ -45,6 +45,14 @@ public final class PokerFrame extends JPanel {
     private static final int FRAME_WIDTH = 1500, FRAME_HEIGHT = 900;
 
     /**
+     * Card dimensions.
+     */
+    private final int cardHeight = 5 * FRAME_HEIGHT / 12,
+            cardWidth = FRAME_WIDTH / 10,
+            cardSpacing = FRAME_WIDTH / 20 + cardWidth, leftMargin = 80,
+            cardNum = 5;
+
+    /**
      * Test rectangle dimensions.
      */
     private static final int RECT_X = 100, RECT_Y = 100, RECT_WIDTH = 150,
@@ -77,7 +85,7 @@ public final class PokerFrame extends JPanel {
                     break;
                 }
             }
-        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | UnsupportedLookAndFeelException exe) {
+        } catch (InstantiationException | ClassNotFoundException | IllegalAccessException | UnsupportedLookAndFeelException exe) {
             System.err.println("Nimbus unavailable: " + exe);
         }
         mainFrame = new JFrame("Poker Client");
@@ -86,6 +94,7 @@ public final class PokerFrame extends JPanel {
         mainFrame.getContentPane().add(new PokerFrame());
         mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         mainFrame.setLocationByPlatform(true);
+        mainFrame.setResizable(false);
         mainFrame.pack();
         mainFrame.setVisible(true);
         mainFrame.addMouseListener(new MouseHandler());
@@ -115,17 +124,28 @@ public final class PokerFrame extends JPanel {
      * @param g Graphics of JPanel
      */
     private void doDrawing(final Graphics g) {
-        g.setColor(Color.red);
-        final int gridInc = 20;
-        for (int j = 0; j < FRAME_WIDTH; j += gridInc) {
-            g.drawLine(j, 0, j, FRAME_HEIGHT);
+//        g.setColor(Color.black);
+//        final int gridInc = 20;
+//        for (int j = 0; j < FRAME_WIDTH; j += gridInc) {
+//            g.drawLine(j, 0, j, FRAME_HEIGHT);
+//        }
+//        for (int j = 0; j < FRAME_HEIGHT; j += gridInc) {
+//            g.drawLine(0, j, FRAME_WIDTH, j);
+//        }
+//        g.setColor(Color.magenta);
+//        g.drawLine(0, FRAME_HEIGHT / 2, FRAME_WIDTH, FRAME_HEIGHT / 2);
+//        g.drawLine(FRAME_WIDTH / 2, 0, FRAME_WIDTH / 2, FRAME_HEIGHT);
+        g.setColor(Color.blue);
+        for (int j = 0; j <= cardNum; j++) {
+            if (j == 0) {
+                g.drawRect(leftMargin, FRAME_HEIGHT / 2 - cardHeight / 2,
+                        cardWidth, cardHeight);
+            } else {
+                g.drawRect(leftMargin + cardSpacing * j,
+                        FRAME_HEIGHT / 2 - cardHeight / 2, cardWidth,
+                        cardHeight);
+            }
         }
-        for (int j = 0; j < FRAME_HEIGHT; j += gridInc) {
-            g.drawLine(0, j, FRAME_WIDTH, j);
-        }
-        g.setColor(Color.green);
-        g.drawLine(0, FRAME_HEIGHT / 2, FRAME_WIDTH, FRAME_HEIGHT / 2);
-        g.drawLine(FRAME_WIDTH / 2, 0, FRAME_WIDTH / 2, FRAME_HEIGHT);
 //        if (rectActive && !rectFill) {
 //            g.drawRect(RECT_X, RECT_Y, RECT_WIDTH, RECT_HEIGHT);
 //        } else if (rectFill) {
