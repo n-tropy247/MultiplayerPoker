@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2019 Ryan Castelli
+ * Copyright (C) 2019 Samantha Cole
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,6 +35,7 @@ import javax.swing.UnsupportedLookAndFeelException;
  * Multiplayer 5-card draw Poker game.
  *
  * @author NTropy
+ * @author Sam Cole
  * @version 4.8.2019
  * @since 4.7.2019
  */
@@ -42,26 +44,15 @@ public final class PokerFrame extends JPanel {
     /**
      * Window dimensions.
      */
-    private static final int FRAME_WIDTH = 1500, FRAME_HEIGHT = 900;
+    private static final int FRAME_WIDTH = 1480, FRAME_HEIGHT = 900;
 
     /**
      * Card dimensions.
      */
-    private final int cardHeight = 5 * FRAME_HEIGHT / 12,
-            cardWidth = FRAME_WIDTH / 10,
-            cardSpacing = FRAME_WIDTH / 20 + cardWidth, leftMargin = 80,
-            cardNum = 5;
-
     /**
-     * Test rectangle dimensions.
+     * Card array.
      */
-    private static final int RECT_X = 100, RECT_Y = 100, RECT_WIDTH = 150,
-            RECT_HEIGHT = 350;
-
-    /**
-     * Tracks whether rectangle should be filled.
-     */
-    private static boolean rectActive = false, rectFill = false;
+    private static Card[] cards;
 
     /**
      * Main window container.
@@ -72,6 +63,22 @@ public final class PokerFrame extends JPanel {
      * Constructor, private to avoid instantiation.
      */
     private PokerFrame() {
+        final int cardHeight = FRAME_HEIGHT / 3,
+                cardWidth = FRAME_WIDTH / 8,
+                cardSpacing = FRAME_WIDTH / 20 + cardWidth, leftMargin = 100,
+                cardNum = 5;
+        cards = new Card[cardNum];
+        for (int j = 0; j < cardNum; j++) {
+            if (j == 0) {
+                cards[0] = new Card(leftMargin,
+                        FRAME_HEIGHT / 2 - cardHeight / 2, cardWidth,
+                        cardHeight);
+            } else {
+                cards[j] = new Card(leftMargin + cardSpacing * j,
+                        FRAME_HEIGHT / 2 - cardHeight / 2, cardWidth,
+                        cardHeight);
+            }
+        }
     }
 
     /**
@@ -85,7 +92,9 @@ public final class PokerFrame extends JPanel {
                     break;
                 }
             }
-        } catch (InstantiationException | ClassNotFoundException | IllegalAccessException | UnsupportedLookAndFeelException exe) {
+        } catch (InstantiationException | ClassNotFoundException
+                | IllegalAccessException
+                | UnsupportedLookAndFeelException exe) {
             System.err.println("Nimbus unavailable: " + exe);
         }
         mainFrame = new JFrame("Poker Client");
@@ -95,6 +104,7 @@ public final class PokerFrame extends JPanel {
         mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         mainFrame.setLocationByPlatform(true);
         mainFrame.setResizable(false);
+        mainFrame.setBackground(Color.lightGray);
         mainFrame.pack();
         mainFrame.setVisible(true);
         mainFrame.addMouseListener(new MouseHandler());
@@ -124,37 +134,23 @@ public final class PokerFrame extends JPanel {
      * @param g Graphics of JPanel
      */
     private void doDrawing(final Graphics g) {
-//        g.setColor(Color.black);
-//        final int gridInc = 20;
-//        for (int j = 0; j < FRAME_WIDTH; j += gridInc) {
-//            g.drawLine(j, 0, j, FRAME_HEIGHT);
-//        }
-//        for (int j = 0; j < FRAME_HEIGHT; j += gridInc) {
-//            g.drawLine(0, j, FRAME_WIDTH, j);
-//        }
-//        g.setColor(Color.magenta);
-//        g.drawLine(0, FRAME_HEIGHT / 2, FRAME_WIDTH, FRAME_HEIGHT / 2);
-//        g.drawLine(FRAME_WIDTH / 2, 0, FRAME_WIDTH / 2, FRAME_HEIGHT);
-        g.setColor(Color.blue);
-        for (int j = 0; j <= cardNum; j++) {
-            if (j == 0) {
-                g.drawRect(leftMargin, FRAME_HEIGHT / 2 - cardHeight / 2,
-                        cardWidth, cardHeight);
-            } else {
-                g.drawRect(leftMargin + cardSpacing * j,
-                        FRAME_HEIGHT / 2 - cardHeight / 2, cardWidth,
-                        cardHeight);
+        final int border = 2;
+        for (Card curCard : cards) {
+            g.setColor(Color.blue);
+            g.fillRect(curCard.getX(), curCard.getY(), curCard.getW(),
+                    curCard.getH());
+            if (curCard.isActive()) {
+                g.setColor(Color.black);
+                g.drawRect(curCard.getX() - border, curCard.getY() - border,
+                        curCard.getW() + 2 * border,
+                        curCard.getH() + 2 * border);
+            }
+            if (curCard.isFilled()) {
+                g.setColor(Color.green);
+                g.fillRect(curCard.getX(), curCard.getY(), curCard.getW(),
+                        curCard.getH());
             }
         }
-//        if (rectActive && !rectFill) {
-//            g.drawRect(RECT_X, RECT_Y, RECT_WIDTH, RECT_HEIGHT);
-//        } else if (rectFill) {
-//            g.clearRect(RECT_X, RECT_Y, RECT_WIDTH, RECT_HEIGHT);
-//            g.fillRect(RECT_X, RECT_Y, RECT_WIDTH, RECT_HEIGHT);
-//        } else {
-//            g.setColor(mainFrame.getBackground());
-//            g.fillRect(RECT_X, RECT_Y, RECT_WIDTH, RECT_HEIGHT);
-//        }
     }
 
     /**
@@ -170,11 +166,10 @@ public final class PokerFrame extends JPanel {
 
         @Override
         public void mousePressed(final MouseEvent e) {
-            mouseX = e.getX();
-            mouseY = e.getY();
-            if (mouseX >= RECT_X && mouseX <= RECT_X + RECT_WIDTH
-                    && mouseY >= RECT_Y && mouseY <= RECT_Y + RECT_HEIGHT) {
-                rectFill = !rectFill;
+            for (Card curCard : cards) {
+                if (curCard.isActive()) {
+                    curCard.setFill(!curCard.isFilled());
+                }
             }
             mainFrame.repaint();
         }
@@ -199,8 +194,12 @@ public final class PokerFrame extends JPanel {
         public void mouseMoved(final MouseEvent e) {
             mouseX = e.getX();
             mouseY = e.getY();
-            rectActive = mouseX >= RECT_X && mouseX <= RECT_X + RECT_WIDTH
-                    && mouseY >= RECT_Y && mouseY <= RECT_Y + RECT_HEIGHT;
+            for (Card curCard : cards) {
+                curCard.setActive(mouseX >= curCard.getX()
+                        && mouseX <= curCard.getX() + curCard.getW()
+                        && mouseY >= curCard.getY()
+                        && mouseY <= curCard.getY() + curCard.getH());
+            }
             mainFrame.repaint();
         }
 

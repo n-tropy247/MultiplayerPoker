@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2019 Ryan Castelli
+ * Copyright (C) 2019 Samantha Cole
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -46,7 +47,8 @@ import javax.swing.UnsupportedLookAndFeelException;
  * Multiplayer server for 5-card draw poker.
  *
  * @author NTropy
- * @version 4.7.2019
+ * @author Sam Cole
+ * @version 4.8.2019
  * @since 4.7.2019
  */
 public final class PokerServer extends Thread {
