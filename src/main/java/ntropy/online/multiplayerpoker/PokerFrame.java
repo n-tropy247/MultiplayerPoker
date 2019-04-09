@@ -21,9 +21,16 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import javax.imageio.ImageIO;
+import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
@@ -42,9 +49,25 @@ import javax.swing.UnsupportedLookAndFeelException;
 public final class PokerFrame extends JPanel {
 
     /**
+     * Button dimensions.
+     */
+    private static final int SWITCH_BTN_X = 1300, SWITCH_BTN_Y = 750,
+            SWITCH_BTN_WIDTH = 120, SWITCH_BTN_HEIGHT = 40;
+
+    /**
      * Window dimensions.
      */
     private static final int FRAME_WIDTH = 1480, FRAME_HEIGHT = 900;
+
+    /**
+     * Button to send cards to be switched out.
+     */
+    private static JButton switchBtn;
+
+    /**
+     * Card images.
+     */
+    private BufferedImage cardFront, cardBack;
 
     /**
      * Card dimensions.
@@ -63,6 +86,13 @@ public final class PokerFrame extends JPanel {
      * Constructor, private to avoid instantiation.
      */
     private PokerFrame() {
+        try {
+            cardFront = ImageIO.read(new File("cardFront.png"));
+            cardBack = ImageIO.read(new File("cardBack.png"));
+        } catch (IOException ie) {
+            System.err.println("Image sources couldn't be accessed: " + ie);
+            System.exit(0);
+        }
         final int cardHeight = FRAME_HEIGHT / 3,
                 cardWidth = FRAME_WIDTH / 8,
                 cardSpacing = FRAME_WIDTH / 20 + cardWidth, leftMargin = 100,
@@ -105,6 +135,11 @@ public final class PokerFrame extends JPanel {
         mainFrame.setLocationByPlatform(true);
         mainFrame.setResizable(false);
         mainFrame.setBackground(Color.lightGray);
+        switchBtn = new JButton("Switch");
+        switchBtn.addActionListener(new ButtonHandler());
+        switchBtn.setBounds(SWITCH_BTN_X, SWITCH_BTN_Y, SWITCH_BTN_WIDTH,
+                SWITCH_BTN_HEIGHT);
+        mainFrame.add(switchBtn, BorderLayout.LINE_END);
         mainFrame.pack();
         mainFrame.setVisible(true);
         mainFrame.addMouseListener(new MouseHandler());
@@ -136,9 +171,7 @@ public final class PokerFrame extends JPanel {
     private void doDrawing(final Graphics g) {
         final int border = 2;
         for (Card curCard : cards) {
-            g.setColor(Color.blue);
-            g.fillRect(curCard.getX(), curCard.getY(), curCard.getW(),
-                    curCard.getH());
+            g.drawImage(cardFront, curCard.getX(), curCard.getY(), null);
             if (curCard.isActive()) {
                 g.setColor(Color.black);
                 g.drawRect(curCard.getX() - border, curCard.getY() - border,
@@ -146,9 +179,31 @@ public final class PokerFrame extends JPanel {
                         curCard.getH() + 2 * border);
             }
             if (curCard.isFilled()) {
-                g.setColor(Color.green);
-                g.fillRect(curCard.getX(), curCard.getY(), curCard.getW(),
-                        curCard.getH());
+                g.drawImage(cardBack, curCard.getX(), curCard.getY(), null);
+            }
+        }
+    }
+
+    /**
+     * Handles all button events for the frame.
+     */
+    private static class ButtonHandler implements ActionListener {
+
+        /**
+         * Possible commands.
+         */
+        private final String switchCmd = "Switch";
+
+        @Override
+        public void actionPerformed(final ActionEvent e) {
+            String cmd = e.getActionCommand();
+            if (cmd.equals(switchCmd)) {
+                for (Card curCard : cards) {
+                    if (curCard.isFilled()) {
+                        curCard.setFill(false);
+                    }
+                }
+                mainFrame.repaint();
             }
         }
     }
