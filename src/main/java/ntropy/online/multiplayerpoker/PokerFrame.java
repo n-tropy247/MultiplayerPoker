@@ -20,7 +20,9 @@ package ntropy.online.multiplayerpoker;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.Graphics;
+import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
@@ -37,22 +39,17 @@ import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.UIManager.LookAndFeelInfo;
 import javax.swing.UnsupportedLookAndFeelException;
+import javax.swing.border.TitledBorder;
 
 /**
  * Multiplayer 5-card draw Poker game.
  *
  * @author NTropy
  * @author Sam Cole
- * @version 4.8.2019
+ * @version 4.10.2019
  * @since 4.7.2019
  */
 public final class PokerFrame extends JPanel {
-
-    /**
-     * Button dimensions.
-     */
-    private static final int SWITCH_BTN_X = 1300, SWITCH_BTN_Y = 750,
-            SWITCH_BTN_WIDTH = 120, SWITCH_BTN_HEIGHT = 40;
 
     /**
      * Window dimensions.
@@ -67,15 +64,17 @@ public final class PokerFrame extends JPanel {
     /**
      * Card images.
      */
-    private BufferedImage cardFront, cardBack;
+    private static BufferedImage cardFront, cardBack;
 
-    /**
-     * Card dimensions.
-     */
     /**
      * Card array.
      */
     private static Card[] cards;
+
+    /**
+     * Card panel.
+     */
+    private static CardPanel cardPanel;
 
     /**
      * Main window container.
@@ -83,38 +82,14 @@ public final class PokerFrame extends JPanel {
     private static JFrame mainFrame;
 
     /**
+     * JPanels, (in order), button container, center container, main container.
+     */
+    private static JPanel buttonPanel, centerPanel, mainPanel;
+
+    /**
      * Constructor, private to avoid instantiation.
      */
     private PokerFrame() {
-        try {
-            cardFront = ImageIO.read(new File("cardFront.png"));
-            cardBack = ImageIO.read(new File("cardBack.png"));
-        } catch (IOException ie) {
-            System.err.println("Image sources couldn't be accessed: " + ie);
-            System.exit(0);
-        }
-        final int cardHeight = FRAME_HEIGHT / 3,
-                cardWidth = FRAME_WIDTH / 8,
-                cardSpacing = FRAME_WIDTH / 20 + cardWidth, leftMargin = 100,
-                cardNum = 5;
-        cards = new Card[cardNum];
-        for (int j = 0; j < cardNum; j++) {
-            if (j == 0) {
-                cards[0] = new Card(leftMargin,
-                        FRAME_HEIGHT / 2 - cardHeight / 2, cardWidth,
-                        cardHeight);
-            } else {
-                cards[j] = new Card(leftMargin + cardSpacing * j,
-                        FRAME_HEIGHT / 2 - cardHeight / 2, cardWidth,
-                        cardHeight);
-            }
-        }
-    }
-
-    /**
-     * Create actual GUI.
-     */
-    private static void createGUI() {
         try {
             for (LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
                 if ("Nimbus".equals(info.getName())) {
@@ -127,23 +102,42 @@ public final class PokerFrame extends JPanel {
                 | UnsupportedLookAndFeelException exe) {
             System.err.println("Nimbus unavailable: " + exe);
         }
-        mainFrame = new JFrame("Poker Client");
-        mainFrame.setLayout(new BorderLayout());
-        mainFrame.setPreferredSize(new Dimension(FRAME_WIDTH, FRAME_HEIGHT));
-        mainFrame.getContentPane().add(new PokerFrame());
-        mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        mainFrame.setLocationByPlatform(true);
-        mainFrame.setResizable(false);
-        mainFrame.setBackground(Color.lightGray);
+
+        cardPanel = new CardPanel();
+        cardPanel.setBorder(new TitledBorder("Drawn Cards"));
+        cardPanel.setOpaque(false);
+        cardPanel.addMouseListener(new MouseHandler());
+        cardPanel.addMouseMotionListener(new MouseHandler());
+
         switchBtn = new JButton("Switch");
         switchBtn.addActionListener(new ButtonHandler());
-        switchBtn.setBounds(SWITCH_BTN_X, SWITCH_BTN_Y, SWITCH_BTN_WIDTH,
-                SWITCH_BTN_HEIGHT);
-        mainFrame.add(switchBtn, BorderLayout.LINE_END);
+
+        buttonPanel = new JPanel(new FlowLayout());
+        buttonPanel.setBorder(new TitledBorder("Button panel"));
+        buttonPanel.add(switchBtn);
+        buttonPanel.setOpaque(false);
+
+        centerPanel = new JPanel(new BorderLayout());
+        centerPanel.add(cardPanel, BorderLayout.CENTER);
+        centerPanel.add(buttonPanel, BorderLayout.SOUTH);
+        centerPanel.setBorder(new TitledBorder("Center panel"));
+        centerPanel.setOpaque(false);
+        centerPanel.setPreferredSize(cardPanel.getPreferredSize());
+
+        mainPanel = new JPanel(new GridBagLayout());
+        mainPanel.add(centerPanel);
+        mainPanel.setBorder(new TitledBorder("Entire window"));
+        mainPanel.setBackground(Color.green);
+
+        mainFrame = new JFrame("Poker Client");
+        mainFrame.add(mainPanel);
+        mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+        mainFrame.setPreferredSize(new Dimension(FRAME_WIDTH, FRAME_HEIGHT));
+        mainFrame.setLocationByPlatform(true);
+        mainFrame.setResizable(false);
         mainFrame.pack();
         mainFrame.setVisible(true);
-        mainFrame.addMouseListener(new MouseHandler());
-        mainFrame.addMouseMotionListener(new MouseHandler());
     }
 
     /**
@@ -153,41 +147,90 @@ public final class PokerFrame extends JPanel {
      */
     public static void main(final String[] args) {
         SwingUtilities.invokeLater(() -> {
-            createGUI();
+            PokerFrame pokerFrame = new PokerFrame();
         });
     }
 
-    @Override
-    public void paintComponent(final Graphics g) {
-        super.paintComponent(g);
-        doDrawing(g);
-    }
-
     /**
-     * Draw in components.
-     *
-     * @param g Graphics of JPanel
+     * Handles drawing of cards.
      */
-    private void doDrawing(final Graphics g) {
-        final int border = 2;
-        for (Card curCard : cards) {
-            g.drawImage(cardFront, curCard.getX(), curCard.getY(), null);
-            if (curCard.isActive()) {
-                g.setColor(Color.black);
-                g.drawRect(curCard.getX() - border, curCard.getY() - border,
-                        curCard.getW() + 2 * border,
-                        curCard.getH() + 2 * border);
+    private static final class CardPanel extends JPanel {
+
+        /**
+         * Card container dimensions.
+         */
+        private final int widthAdjust = 200, heightAdjust = 150,
+                cardPanelWidth = FRAME_WIDTH - widthAdjust,
+                cardPanelHeight = FRAME_HEIGHT - heightAdjust;
+
+        /**
+         * Default constructor.
+         */
+        private CardPanel() {
+            try {
+                cardFront = ImageIO.read(new File("images\\cardFront.png"));
+                cardBack = ImageIO.read(new File("images\\cardBack.png"));
+            } catch (IOException ie) {
+                System.err.println("Image sources couldn't be accessed: " + ie);
+                System.exit(0);
             }
-            if (curCard.isFilled()) {
-                g.drawImage(cardBack, curCard.getX(), curCard.getY(), null);
+            final int cardHeight = cardBack.getHeight(),
+                    cardWidth = cardBack.getWidth(),
+                    cardSpacing = cardPanelWidth / 20 + cardWidth,
+                    cardNum = 5, leftMargin = cardPanelWidth - cardNum
+                        * cardWidth - cardNum * (cardSpacing - cardWidth);
+            cards = new Card[cardNum];
+            for (int j = 0; j < cardNum; j++) {
+                if (j == 0) {
+                    cards[0] = new Card(leftMargin,
+                            cardPanelHeight / 2 - cardHeight / 2, cardWidth,
+                            cardHeight);
+                } else {
+                    cards[j] = new Card(leftMargin + cardSpacing * j,
+                            cardPanelHeight / 2 - cardHeight / 2, cardWidth,
+                            cardHeight);
+                }
             }
+        }
+
+        @Override
+        protected void paintComponent(final Graphics g) {
+            super.paintComponent(g);
+            doDrawing(g);
+        }
+
+        /**
+         * Draw in components.
+         *
+         * @param g Graphics of JPanel
+         */
+        private void doDrawing(final Graphics g) {
+            final int border = 2;
+            for (Card curCard : cards) {
+                g.drawImage(cardFront, curCard.getX(), curCard.getY(), null);
+                if (curCard.isActive()) {
+                    g.setColor(Color.black);
+                    g.drawRect(curCard.getX() - border, curCard.getY() - border,
+                            curCard.getW() + 2 * border,
+                            curCard.getH() + 2 * border);
+                }
+                if (curCard.isFilled()) {
+                    g.drawImage(cardBack, curCard.getX(), curCard.getY(), null);
+                }
+            }
+        }
+
+        @Override
+        public Dimension getPreferredSize() {
+            return new Dimension(FRAME_WIDTH - widthAdjust,
+                    FRAME_HEIGHT - heightAdjust);
         }
     }
 
     /**
      * Handles all button events for the frame.
      */
-    private static class ButtonHandler implements ActionListener {
+    private static final class ButtonHandler implements ActionListener {
 
         /**
          * Possible commands.
@@ -203,7 +246,7 @@ public final class PokerFrame extends JPanel {
                         curCard.setFill(false);
                     }
                 }
-                mainFrame.repaint();
+                cardPanel.repaint();
             }
         }
     }
@@ -211,7 +254,7 @@ public final class PokerFrame extends JPanel {
     /**
      * Handles all mouse events for the frame.
      */
-    private static class MouseHandler implements MouseListener,
+    private static final class MouseHandler implements MouseListener,
             MouseMotionListener {
 
         /**
@@ -226,7 +269,7 @@ public final class PokerFrame extends JPanel {
                     curCard.setFill(!curCard.isFilled());
                 }
             }
-            mainFrame.repaint();
+            cardPanel.repaint();
         }
 
         @Override
@@ -255,7 +298,7 @@ public final class PokerFrame extends JPanel {
                         && mouseY >= curCard.getY()
                         && mouseY <= curCard.getY() + curCard.getH());
             }
-            mainFrame.repaint();
+            cardPanel.repaint();
         }
 
         @Override
