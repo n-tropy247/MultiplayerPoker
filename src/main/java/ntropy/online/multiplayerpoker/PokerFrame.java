@@ -29,8 +29,13 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.net.InetAddress;
+import java.net.Socket;
+import java.net.UnknownHostException;
 import javax.imageio.ImageIO;
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -49,7 +54,12 @@ import javax.swing.border.TitledBorder;
  * @version 4.10.2019
  * @since 4.7.2019
  */
-public final class PokerFrame extends JPanel {
+public final class PokerFrame extends Thread {
+
+    /**
+     * Port info.
+     */
+    private static final int DEFAULT_PORT = 22377;
 
     /**
      * Window dimensions.
@@ -57,14 +67,14 @@ public final class PokerFrame extends JPanel {
     private static final int FRAME_WIDTH = 1480, FRAME_HEIGHT = 900;
 
     /**
-     * Button to send cards to be switched out.
-     */
-    private static JButton switchBtn;
-
-    /**
      * Card images.
      */
     private static BufferedImage cardFront, cardBack;
+
+    /**
+     * Input from server.
+     */
+    private static BufferedReader svrIn;
 
     /**
      * Card array.
@@ -77,6 +87,11 @@ public final class PokerFrame extends JPanel {
     private static CardPanel cardPanel;
 
     /**
+     * Button to send cards to be switched out.
+     */
+    private static JButton switchBtn;
+
+    /**
      * Main window container.
      */
     private static JFrame mainFrame;
@@ -85,6 +100,31 @@ public final class PokerFrame extends JPanel {
      * JPanels, (in order), button container, center container, main container.
      */
     private static JPanel buttonPanel, centerPanel, mainPanel;
+
+    /**
+     * Output to server.
+     */
+    private static PrintWriter svrOut;
+
+    /**
+     * Socket to server.
+     */
+    private static Socket socket;
+
+    /**
+     * Host name.
+     */
+    private static String defaultHost;
+    
+    /**
+     * Input from server.
+     */
+    private static String inputFromSvr;
+
+    /**
+     * Server thread for i/o.
+     */
+    private static Thread svrThread;
 
     /**
      * Constructor, private to avoid instantiation.
@@ -101,6 +141,13 @@ public final class PokerFrame extends JPanel {
                 | IllegalAccessException
                 | UnsupportedLookAndFeelException exe) {
             System.err.println("Nimbus unavailable: " + exe);
+        }
+
+        try {
+            InetAddress localhost = InetAddress.getLocalHost();
+            defaultHost = (localhost.getHostAddress()).trim();
+        } catch (UnknownHostException hostErr) {
+            System.err.println("Cannot retrieve local address: " + hostErr);
         }
 
         cardPanel = new CardPanel();
@@ -138,6 +185,18 @@ public final class PokerFrame extends JPanel {
         mainFrame.setResizable(false);
         mainFrame.pack();
         mainFrame.setVisible(true);
+    }
+
+    @Override
+    public void run() {
+        try {
+            while (true) {
+                inputFromSvr = svrIn.readLine();
+                cardPanel.repaint();
+            }
+        } catch (IOException ie) {
+            System.err.println("Couldn't read from server: " + ie);
+        }
     }
 
     /**
