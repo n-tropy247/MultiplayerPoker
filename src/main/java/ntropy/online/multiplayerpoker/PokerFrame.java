@@ -32,10 +32,11 @@ import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import javax.imageio.ImageIO;
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -51,15 +52,58 @@ import javax.swing.border.TitledBorder;
  *
  * @author NTropy
  * @author Sam Cole
- * @version 4.10.2019
+ * @version 4.11.2019
  * @since 4.7.2019
  */
 public final class PokerFrame extends Thread {
 
     /**
+     * START Server Info.
+     */
+
+    /**
      * Port info.
      */
-    private static final int DEFAULT_PORT = 22377;
+    private static final int PORT = 22337;
+
+    /**
+     * Input from server.
+     */
+    private static BufferedReader svrIn;
+
+    /**
+     * Number of cards needed from server.
+     */
+    private static int numCardsSwitched;
+
+    /**
+     * List of ints to be constructed from server input.
+     */
+    private static ArrayList<String> newCardList;
+
+    /**
+     * Output to server.
+     */
+    private static PrintWriter svrOut;
+
+    /**
+     * Socket to server.
+     */
+    private static Socket socket;
+
+    /**
+     * Input from server in the form of String.
+     */
+    private static String svrInput;
+
+    /**
+     * IP info.
+     */
+    private static final String IP = "127.0.0.1";
+
+    /**
+     * END Server Info.
+     */
 
     /**
      * Window dimensions.
@@ -70,11 +114,6 @@ public final class PokerFrame extends Thread {
      * Card images.
      */
     private static BufferedImage cardFront, cardBack;
-
-    /**
-     * Input from server.
-     */
-    private static BufferedReader svrIn;
 
     /**
      * Card array.
@@ -102,34 +141,26 @@ public final class PokerFrame extends Thread {
     private static JPanel buttonPanel, centerPanel, mainPanel;
 
     /**
-     * Output to server.
-     */
-    private static PrintWriter svrOut;
-
-    /**
-     * Socket to server.
-     */
-    private static Socket socket;
-
-    /**
-     * Host name.
-     */
-    private static String defaultHost;
-    
-    /**
-     * Input from server.
-     */
-    private static String inputFromSvr;
-
-    /**
-     * Server thread for i/o.
-     */
-    private static Thread svrThread;
-
-    /**
      * Constructor, private to avoid instantiation.
      */
     private PokerFrame() {
+
+        try {
+            socket = new Socket(IP, PORT);
+            try {
+                svrIn = new BufferedReader(new InputStreamReader(
+                        socket.getInputStream()));
+                svrOut = new PrintWriter(socket.getOutputStream(), true);
+            } catch (IOException e) {
+                System.err.println("Issue opening i/o stream from server: "
+                        + e);
+            }
+        } catch (UnknownHostException e) {
+            System.err.println("Host not found: " + e);
+        } catch (IOException ie) {
+            System.err.println("Socket cannot read from server: " + ie);
+        }
+
         try {
             for (LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
                 if ("Nimbus".equals(info.getName())) {
@@ -141,13 +172,6 @@ public final class PokerFrame extends Thread {
                 | IllegalAccessException
                 | UnsupportedLookAndFeelException exe) {
             System.err.println("Nimbus unavailable: " + exe);
-        }
-
-        try {
-            InetAddress localhost = InetAddress.getLocalHost();
-            defaultHost = (localhost.getHostAddress()).trim();
-        } catch (UnknownHostException hostErr) {
-            System.err.println("Cannot retrieve local address: " + hostErr);
         }
 
         cardPanel = new CardPanel();
@@ -189,13 +213,35 @@ public final class PokerFrame extends Thread {
 
     @Override
     public void run() {
+        //TODO: this code isn't running...
         try {
             while (true) {
-                inputFromSvr = svrIn.readLine();
-                cardPanel.repaint();
+                svrInput = svrIn.readLine();
+                newCardList.add(svrInput);
+                if (newCardList.size() == numCardsSwitched) {
+                    adjustCardArr();
+                    cardPanel.repaint();
+                }
             }
         } catch (IOException ie) {
             System.err.println("Couldn't read from server: " + ie);
+        }
+    }
+
+    /**
+     * Handle adjustment to Card array.
+     */
+    private static void adjustCardArr() {
+        int cardH, cardW, cardX, cardY;
+        for (int j = 0; j < cards.length; j++) {
+            if (cards[j].toSwitch()) {
+                cardH = cards[j].getH();
+                cardW = cards[j].getW();
+                cardX = cards[j].getX();
+                cardY = cards[j].getY();
+                cards[j] = new Card(
+                        cardX, cardY, cardW, cardH, newCardList.remove(0));
+            }
         }
     }
 
@@ -233,21 +279,24 @@ public final class PokerFrame extends Thread {
                 System.err.println("Image sources couldn't be accessed: " + ie);
                 System.exit(0);
             }
+
             final int cardHeight = cardBack.getHeight(),
                     cardWidth = cardBack.getWidth(),
                     cardSpacing = cardPanelWidth / 20 + cardWidth,
                     cardNum = 5, leftMargin = cardPanelWidth - cardNum
                         * cardWidth - cardNum * (cardSpacing - cardWidth);
+
+
             cards = new Card[cardNum];
             for (int j = 0; j < cardNum; j++) {
                 if (j == 0) {
                     cards[0] = new Card(leftMargin,
                             cardPanelHeight / 2 - cardHeight / 2, cardWidth,
-                            cardHeight);
+                            cardHeight, "TEMP");
                 } else {
                     cards[j] = new Card(leftMargin + cardSpacing * j,
                             cardPanelHeight / 2 - cardHeight / 2, cardWidth,
-                            cardHeight);
+                            cardHeight, "TEMP");
                 }
             }
         }
@@ -302,10 +351,16 @@ public final class PokerFrame extends Thread {
             if (cmd.equals(switchCmd)) {
                 for (Card curCard : cards) {
                     if (curCard.isFilled()) {
-                        curCard.setFill(false);
+                        curCard.setSwitch(true);
+                        numCardsSwitched++;
                     }
                 }
-                cardPanel.repaint();
+                svrOut.println(numCardsSwitched);
+                for (Card curCard : cards) {
+                    if (curCard.toSwitch()) {
+                        svrOut.println(curCard.getType());
+                    }
+                }
             }
         }
     }

@@ -22,10 +22,16 @@ package ntropy.online.multiplayerpoker;
  *
  * @author NTropy
  * @author Sam Cole
- * @version 4.8.2019
+ * @version 4.11.2019
  * @since 4.8.2019
  */
 public final class Card {
+
+    /**
+     * Card type is to be recognized by String.
+     * For example, "DiamondKing" or "Clubs3"
+     */
+    private final String cardType;
 
     /**
      * Card positioning info.
@@ -35,7 +41,7 @@ public final class Card {
     /**
      * Card states.
      */
-    private boolean active = false, fill = false;
+    private boolean active = false, fill = false, toSwitch = false;
 
     /**
      * Default constructor.
@@ -44,12 +50,15 @@ public final class Card {
      * @param y y-position of card
      * @param w width of card
      * @param h height of card
+     * @param s type of card
      */
-    public Card(final int x, final int y, final int w, final int h) {
+    public Card(final int x, final int y, final int w, final int h,
+            final String s) {
         xPos = x;
         yPos = y;
         width = w;
         height = h;
+        cardType = s;
     }
 
     /**
@@ -89,6 +98,24 @@ public final class Card {
     }
 
     /**
+     * Report type of card.
+     *
+     * @return type
+     */
+    public String getType() {
+        return cardType;
+    }
+
+    /**
+     * Report if card is to be exchanged.
+     *
+     * @return true if card needs changed
+     */
+    public boolean toSwitch() {
+        return toSwitch;
+    }
+
+    /**
      * Report whether card is active (highlighted).
      *
      * @return active
@@ -122,5 +149,14 @@ public final class Card {
      */
     public void setFill(final boolean b) {
         fill = b;
+    }
+
+    /**
+     * Change whether card is to be exchanged.
+     *
+     * @param b new value of toSwitch
+     */
+    public void setSwitch(final boolean b) {
+        toSwitch = b;
     }
 }

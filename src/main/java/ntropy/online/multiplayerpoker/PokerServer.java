@@ -32,6 +32,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -45,10 +46,11 @@ import javax.swing.UnsupportedLookAndFeelException;
 
 /**
  * Multiplayer server for 5-card draw poker.
+ * TODO: This needs some serious overhaul, might not even be functional
  *
  * @author NTropy
  * @author Sam Cole
- * @version 4.8.2019
+ * @version 4.11.2019
  * @since 4.7.2019
  */
 public final class PokerServer extends Thread {
@@ -78,7 +80,13 @@ public final class PokerServer extends Thread {
     /**
      * Client info.
      */
-    private static int clientPos, connectionNum, portNum, sendCount = 0;
+    private static int clientPos, connectionNum, portNum, sendCount = 0,
+            numCardsReturned;
+
+    /**
+     * Card info.
+     */
+    private static ArrayList<String> cardsReturned;
 
     /**
      * Sever command send button.
@@ -236,28 +244,31 @@ public final class PokerServer extends Thread {
      * Thread code to establish i/o with clients.
      */
     @Override
+    @SuppressWarnings("SleepWhileInLoop")
     public void run() {
         int curClient = clientPos;
         String threadName = clientName;
-
         try {
             fromClient = new BufferedReader(
                     new InputStreamReader(clients[curClient].getInputStream()));
             String inptLine;
             while (true) {
+                numCardsReturned = Integer.parseInt(fromClient.readLine());
+                display.setText(display.getText() + "\nCARDS: "
+                        + numCardsReturned);
                 inptLine = fromClient.readLine();
                 if (inptLine != null) {
-                    display.setText(display.getText() + threadName + ": "
+                    display.setText(display.getText() + "\n: "
                             + inptLine);
-
-                    for (int j = 0; j < clients.length; j++) {
-                        if (j != curClient) {
-                            if (clients[j] != null) {
-                                toClient = new PrintWriter(
-                                        clients[j].getOutputStream(), true);
-                                toClient.println(threadName + ": " + inptLine);
-                            }
-                        }
+                    cardsReturned.add(inptLine);
+                    toClient.println("Test");
+                }
+                if (cardsReturned.size() == numCardsReturned) {
+                    for (int j = 0; j < numCardsReturned; j++) {
+                        //TODO: add deck implementation and return from AL to
+                        //deck
+                        display.setText(display.getText() + "\nhit");
+                        toClient.println("NEW");
                     }
                 }
             }
@@ -333,20 +344,8 @@ public final class PokerServer extends Thread {
                 toClient = new PrintWriter(clients[j].getOutputStream(), true);
                 fromClient = new BufferedReader(
                         new InputStreamReader(clients[j].getInputStream()));
-                clientNames[j] = fromClient.readLine();
 
-                for (int i = 0; i < clientNames.length; i++) {
-                    if (j != i) {
-                        if (clientNames[j].equals(clientNames[i])) {
-                            clientNames[j] = clientNames[j] + (j + 1);
-                        }
-                    }
-                }
-
-                toClient.println(j + 1);
-                toClient.println("Welcome to the game!");
-
-                threadArr[j] = new PokerServer(clientNames[j], j);
+                threadArr[j] = new PokerServer("TEMP", j);
                 threadArr[j].start();
             } catch (IOException ie) {
                 System.err.println("I/O error with client: " + ie);
