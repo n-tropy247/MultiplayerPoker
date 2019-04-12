@@ -52,10 +52,10 @@ import javax.swing.border.TitledBorder;
  *
  * @author NTropy
  * @author Sam Cole
- * @version 4.11.2019
+ * @version 4.12.2019
  * @since 4.7.2019
  */
-public final class PokerFrame extends Thread {
+public final class PokerFrame {
 
     /**
      * START Server Info.
@@ -78,7 +78,7 @@ public final class PokerFrame extends Thread {
     /**
      * List of ints to be constructed from server input.
      */
-    private static ArrayList<String> newCardList = new ArrayList<>();
+    private static final ArrayList<String> NEW_CARD_LIST = new ArrayList<>();
 
     /**
      * Output to server.
@@ -150,8 +150,8 @@ public final class PokerFrame extends Thread {
                         socket.getInputStream()));
                 svrOut = new PrintWriter(socket.getOutputStream(), true);
             } catch (IOException e) {
-                System.err.println("Issue opening i/o stream from server: " +
-                         e);
+                System.err.println("Issue opening i/o stream from server: "
+                        + e);
             }
         } catch (UnknownHostException e) {
             System.err.println("Host not found: " + e);
@@ -209,23 +209,6 @@ public final class PokerFrame extends Thread {
         mainFrame.setVisible(true);
     }
 
-    @Override
-    public void run() {
-        //TODO: this code isn't running...
-        try {
-            while (true) {
-                svrInput = svrIn.readLine();
-                newCardList.add(svrInput);
-                if (newCardList.size() == numCardsSwitched) {
-                    adjustCardArr();
-                    cardPanel.repaint();
-                }
-            }
-        } catch (IOException ie) {
-            System.err.println("Couldn't read from server: " + ie);
-        }
-    }
-
     /**
      * Handle adjustment to Card array.
      */
@@ -238,7 +221,7 @@ public final class PokerFrame extends Thread {
                 cardX = cards[j].getX();
                 cardY = cards[j].getY();
                 cards[j] = new Card(
-                        cardX, cardY, cardW, cardH, newCardList.remove(0));
+                        cardX, cardY, cardW, cardH, NEW_CARD_LIST.remove(0));
             }
         }
     }
@@ -281,8 +264,8 @@ public final class PokerFrame extends Thread {
             final int cardHeight = cardBack.getHeight(),
                     cardWidth = cardBack.getWidth(),
                     cardSpacing = cardPanelWidth / 20 + cardWidth,
-                    cardNum = 5, leftMargin = cardPanelWidth - cardNum *
-                     cardWidth - cardNum * (cardSpacing - cardWidth);
+                    cardNum = 5, leftMargin = cardPanelWidth - cardNum
+                    * cardWidth - cardNum * (cardSpacing - cardWidth);
 
             cards = new Card[cardNum];
             for (int j = 0; j < cardNum; j++) {
@@ -336,7 +319,10 @@ public final class PokerFrame extends Thread {
      * Handles all button events for the frame.
      */
     private static final class ButtonHandler implements ActionListener {
-        
+
+        /**
+         * Counts successful send for debug purposes.
+         */
         private int cmdCount;
 
         /**
@@ -362,12 +348,14 @@ public final class PokerFrame extends Thread {
                     }
                 }
                 cmdCount++;
+                //DEBUG
                 System.out.println("COUNT: " + cmdCount);
-                while (newCardList.size() < numCardsSwitched) {
+                while (NEW_CARD_LIST.size() < numCardsSwitched) {
                     try {
                         svrInput = svrIn.readLine();
+                        //DEBUG
                         System.out.println(svrInput);
-                        newCardList.add(svrInput);
+                        NEW_CARD_LIST.add(svrInput);
 
                     } catch (IOException ie) {
                         System.err.println("Couldn't read from server: " + ie);
@@ -421,10 +409,10 @@ public final class PokerFrame extends Thread {
             mouseX = e.getX();
             mouseY = e.getY();
             for (Card curCard : cards) {
-                curCard.setActive(mouseX >= curCard.getX() &&
-                        mouseX <= curCard.getX() + curCard.getW() &&
-                        mouseY >= curCard.getY() &&
-                        mouseY <= curCard.getY() + curCard.getH());
+                curCard.setActive(mouseX >= curCard.getX()
+                        && mouseX <= curCard.getX() + curCard.getW()
+                        && mouseY >= curCard.getY()
+                        && mouseY <= curCard.getY() + curCard.getH());
             }
             cardPanel.repaint();
         }

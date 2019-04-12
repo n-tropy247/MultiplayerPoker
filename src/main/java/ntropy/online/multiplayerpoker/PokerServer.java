@@ -46,11 +46,11 @@ import javax.swing.UnsupportedLookAndFeelException;
 
 /**
  * Multiplayer server for 5-card draw poker.
- * TODO: This needs some serious overhaul, might not even be functional
+ * TODO: This needs some serious overhaul
  *
  * @author NTropy
  * @author Sam Cole
- * @version 4.11.2019
+ * @version 4.12.2019
  * @since 4.7.2019
  */
 public final class PokerServer extends Thread {
@@ -86,7 +86,7 @@ public final class PokerServer extends Thread {
     /**
      * Card info.
      */
-    private static ArrayList<String> cardsReturned = new ArrayList<>();
+    private static final ArrayList<String> CARD_RETURNED = new ArrayList<>();
 
     /**
      * Sever command send button.
@@ -225,8 +225,8 @@ public final class PokerServer extends Thread {
         mainFrame.pack();
         mainFrame.setVisible(true);
         mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        display.setText("Enter desired port (enter for default: " +
-                DEFAULT_PORT + " )");
+        display.setText("Enter desired port (enter for default: "
+                + DEFAULT_PORT + " )");
     }
 
     /**
@@ -255,23 +255,25 @@ public final class PokerServer extends Thread {
                         new InputStreamReader(clients[curClient].
                                 getInputStream()));
                 String inptLine;
-                cardsReturned.clear();
+                CARD_RETURNED.clear();
                 numCardsReturned = Integer.parseInt(fromClient.readLine());
-                display.setText(display.getText() + "\nCARDS: " +
-                        numCardsReturned);
-                while (cardsReturned.size() < numCardsReturned) {
+                //DEBUG
+                display.setText(display.getText() + "\nCARDS: "
+                        + numCardsReturned);
+                while (CARD_RETURNED.size() < numCardsReturned) {
                     inptLine = fromClient.readLine();
                     if (inptLine != null) {
-                        display.setText(display.getText() + "\n: " +
-                                inptLine);
-                        cardsReturned.add(inptLine);
+                        display.setText(display.getText() + "\n: "
+                                + inptLine);
+                        CARD_RETURNED.add(inptLine);
                     }
                 }
+                //DEBUG
                 cmdCount++;
                 display.setText(display.getText() + "\nCOUNT: " + cmdCount);
                 for (int j = 0; j < numCardsReturned; j++) {
-                    //TODO: add deck implementation and return from AL to
-                    //deck
+                    //TODO: add deck implementation; return from AL to deck
+                    //DEBUG
                     display.setText(display.getText() + "\nhit");
                     toClient.println("NEW");
                 }
@@ -283,17 +285,17 @@ public final class PokerServer extends Thread {
                 while (loop && loopCount < MAX_ERROR) {
                     try {
                         loop = false;
-                        display.setText(display.getText() +
-                                "\nWaiting for connection...");
+                        display.setText(display.getText()
+                                + "\nWaiting for connection...");
                         try {
                             Thread.sleep(CONNECTION_WAIT);
                         } catch (InterruptedException ie) {
                             System.err.println("Thread interrupted: " + ie);
                         }
                         clients[curClient] = connectionSocket.accept();
-                        display.setText(display.getText() +
-                                "\nConnection restablished with " + threadName +
-                                ".");
+                        display.setText(display.getText()
+                                + "\nConnection restablished with "
+                                + threadName + ".");
                         toClient = new PrintWriter(
                                 clients[curClient].getOutputStream(), true);
                         fromClient = new BufferedReader(
@@ -304,8 +306,9 @@ public final class PokerServer extends Thread {
                             if (curClient != j) {
                                 if (clientNames[curClient].
                                         equals(clientNames[j])) {
-                                    clientNames[curClient] = clientNames[curClient] +
-                                            (curClient + 1);
+                                    clientNames[curClient] =
+                                            clientNames[curClient]
+                                            + (curClient + 1);
                                 }
                             }
                         }
@@ -315,9 +318,9 @@ public final class PokerServer extends Thread {
                     } catch (IOException ie) {
                         loop = true;
                         loopCount++;
-                        System.err.println("Client connection could not be " +
-                                "restablished. Tried " + loopCount + " times: " +
-                                ie);
+                        System.err.println("Client connection could not be "
+                                + "restablished. Tried " + loopCount
+                                + " times: " + ie);
                         if (loopCount == MAX_ERROR) {
                             System.err.
                                     println("Connection failed too many times");
@@ -344,8 +347,8 @@ public final class PokerServer extends Thread {
 
             try {
                 clients[j] = connectionSocket.accept();
-                display.setText(display.getText() +
-                        "\nClient " + (j + 1) + " connection established.");
+                display.setText(display.getText()
+                        + "\nClient " + (j + 1) + " connection established.");
                 toClient = new PrintWriter(clients[j].getOutputStream(), true);
                 fromClient = new BufferedReader(
                         new InputStreamReader(clients[j].getInputStream()));
@@ -391,14 +394,14 @@ public final class PokerServer extends Thread {
                         try {
                             connectionSocket = new ServerSocket(portNum);
                         } catch (IOException ioe) {
-                            System.err.println("Socket could not be created: " +
-                                    ioe);
+                            System.err.println("Socket could not be created: "
+                                    + ioe);
                         }
                         display.setText(display.getText() + "\nYou: " + input);
                         mainFrame.repaint();
-                        display.setText(display.getText() +
-                                "\nNumber of connections(enter for default: " +
-                                DEFAULT_CONNECTION_NUM + " )");
+                        display.setText(display.getText()
+                                + "\nNumber of connections(enter for default: "
+                                + DEFAULT_CONNECTION_NUM + " )");
                         break;
                     case 2:
                         int numInt = 0;
