@@ -321,11 +321,6 @@ public final class PokerFrame {
     private static final class ButtonHandler implements ActionListener {
 
         /**
-         * Counts successful send for debug purposes.
-         */
-        private int cmdCount;
-
-        /**
          * Possible commands.
          */
         private final String switchCmd = "Switch";
@@ -347,14 +342,9 @@ public final class PokerFrame {
                         svrOut.println(curCard.getType());
                     }
                 }
-                cmdCount++;
-                //DEBUG
-                System.out.println("COUNT: " + cmdCount);
                 while (NEW_CARD_LIST.size() < numCardsSwitched) {
                     try {
                         svrInput = svrIn.readLine();
-                        //DEBUG
-                        System.out.println(svrInput);
                         NEW_CARD_LIST.add(svrInput);
 
                     } catch (IOException ie) {

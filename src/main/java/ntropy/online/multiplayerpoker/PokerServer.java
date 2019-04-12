@@ -17,12 +17,6 @@
  */
 package ntropy.online.multiplayerpoker;
 
-import java.awt.BorderLayout;
-import java.awt.FlowLayout;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -31,25 +25,12 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URL;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
-import javax.swing.JTextField;
-import javax.swing.SwingUtilities;
-import javax.swing.UIManager;
-import javax.swing.UIManager.LookAndFeelInfo;
-import javax.swing.UnsupportedLookAndFeelException;
 
 /**
- * Multiplayer server for 5-card draw poker.
- * TODO: This needs some serious overhaul
+ * Overhauling server.
  *
- * @author NTropy
- * @author Sam Cole
+ * @author Ntropy
  * @version 4.12.2019
  * @since 4.7.2019
  */
@@ -58,96 +39,60 @@ public final class PokerServer extends Thread {
     /**
      * Default connection info.
      */
-    private static final int DEFAULT_PORT = 22337, DEFAULT_CONNECTION_NUM = 1,
-            CONNECTION_WAIT = 5000, MAX_ERROR = 3;
+    private static final int DEFAULT_PORT = 22337, DEFAULT_CONNECTION_NUM = 1;
 
     /**
-     * Window dimensions.
+     * Input from client.
      */
-    private static final int FRAME_WIDTH = 500, FRAME_HEIGHT = 420,
-            DISPLAY_ROWS = 20, DISPLAY_COLS = 30, TEXT_FIELD_WIDTH = 30;
+    private static BufferedReader clientInpt;
 
     /**
-     * ActionEvent to override send button.
+     * Client info; largely unused as of now.
      */
-    private static ActionEvent enterSend;
+    private static int clientPos, connectionNum, portNum, numCardsRet;
 
     /**
-     * Reader for client input.
+     * Cards received from client.
      */
-    private static BufferedReader fromClient;
+    private static final ArrayList<String> CARDS_RETURNED = new ArrayList<>();
 
     /**
-     * Client info.
+     * Output to client.
      */
-    private static int clientPos, connectionNum, portNum, sendCount = 0,
-            numCardsReturned;
-
-    /**
-     * Card info.
-     */
-    private static final ArrayList<String> CARD_RETURNED = new ArrayList<>();
-
-    /**
-     * Sever command send button.
-     */
-    private static JButton sendBtn;
-
-    /**
-     * Primary container frame.
-     */
-    private static JFrame mainFrame;
-
-    /**
-     * Allows scrolling in i/o window.
-     */
-    private static JScrollPane scrlp;
-
-    /**
-     * Primary display window.
-     */
-    private static JTextArea display;
-
-    /**
-     * Primary text input field.
-     */
-    private static JTextField jtfInput;
-
-    /**
-     * Write output to client.
-     */
-    private static PrintWriter toClient;
+    private static PrintWriter clientOutpt;
 
     /**
      * Socket for connection to clients.
      */
-    private static ServerSocket connectionSocket;
+    private static ServerSocket mainSocket;
 
     /**
-     * Array of Sockets on which clients connect.
+     * Sockets on which clients communicate.
      */
-    private static Socket[] clients;
+    private static Socket[] clientArr;
 
     /**
-     * Names of clients.
+     * Names of clients; unused as of yet.
      */
     private static String[] clientNames;
 
     /**
-     * Client connection info.
+     * Connection info for clients.
      */
-    private static String clientName, input, ipLocal, ipPublic;
+    private static String clientName, clientInputStr, localIP, publicIP;
 
     /**
-     * Client threads.
+     * Client connection threads.
      */
     private static Thread[] threadArr;
 
     /**
-     * Constructor for client threads.
+     * Constructor, invoked to create client threads.
      *
-     * @param n name of client
-     * @param c position of client in array
+     * @param n
+     *          name of client
+     * @param c
+     *          position of client in array
      */
     private PokerServer(final String n, final int c) {
         clientPos = c;
@@ -155,178 +100,89 @@ public final class PokerServer extends Thread {
     }
 
     /**
-     * Creates GUI.
-     */
-    private static void createGUI() {
-        try {
-            InetAddress localHost = InetAddress.getLocalHost();
-            ipLocal = (localHost.getHostAddress()).trim();
-        } catch (UnknownHostException hostErr) {
-            System.err.println("Localhost not recognized: " + hostErr);
-        }
-
-        //change look and feel to a retro theme (I just like it better).
-        try {
-            for (LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    UIManager.setLookAndFeel(info.getClassName());
-                    break;
-                }
-            }
-        } catch (ClassNotFoundException | IllegalAccessException
-                | InstantiationException | UnsupportedLookAndFeelException e) {
-            System.err.println("Nimbus unavailable: " + e);
-        }
-
-        try {
-            URL publicIP = new URL("http://checkip.amazonaws.com");
-
-            BufferedReader ipReader = new BufferedReader(new InputStreamReader(
-                    publicIP.openStream()));
-
-            ipPublic = ipReader.readLine();
-        } catch (IOException ie) {
-            System.err.println("Unable to grab public IP: " + ie);
-        }
-
-        mainFrame = new JFrame("Poker Server");
-        mainFrame.setLayout(new BorderLayout());
-
-        display = new JTextArea(DISPLAY_ROWS, DISPLAY_COLS);
-        display.setEditable(false);
-        display.setLineWrap(true);
-
-        scrlp = new JScrollPane(display);
-
-        jtfInput = new JTextField(TEXT_FIELD_WIDTH);
-
-        sendBtn = new JButton("Send");
-        sendBtn.addActionListener(new SendHandler());
-
-        KeyListener keyListen = new SendHandler();
-
-        jtfInput.addKeyListener(keyListen);
-
-        mainFrame.add(scrlp, BorderLayout.PAGE_START);
-
-        enterSend = new ActionEvent(sendBtn, ActionEvent.ACTION_PERFORMED,
-                "Send");
-
-        JPanel btnPanel = new JPanel();
-        btnPanel.setLayout(new FlowLayout());
-        btnPanel.add(jtfInput, BorderLayout.LINE_START);
-        btnPanel.add(sendBtn, BorderLayout.LINE_END);
-
-        mainFrame.setSize(FRAME_WIDTH, FRAME_HEIGHT);
-        mainFrame.setLocationByPlatform(true);
-        mainFrame.add(btnPanel, BorderLayout.PAGE_END);
-        mainFrame.setFocusable(true);
-        mainFrame.setResizable(false);
-        mainFrame.pack();
-        mainFrame.setVisible(true);
-        mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        display.setText("Enter desired port (enter for default: "
-                + DEFAULT_PORT + " )");
-    }
-
-    /**
-     * Create main frame.
+     * Main method.
      *
-     * @param args command-line arguments; unused here
+     * @param args
+     *             command-line arguments; unused here as of yet
      */
     public static void main(final String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            createGUI();
-        });
+        try {
+            localIP = InetAddress.getLocalHost().getHostAddress().trim();
+            publicIP = (new BufferedReader(new InputStreamReader((new URL(
+                    "http://checkip.amazonaws.com")).openStream()))).readLine();
+        } catch (IOException e) {
+            System.err.println("Unable to grab local or public IP: " + e);
+        }
+
+        BufferedReader usrInpt = new BufferedReader(new InputStreamReader(
+                System.in));
+
+        int port = DEFAULT_PORT;
+
+        String usrInptStr = "s";
+        boolean validInpt = false;
+        try {
+            while (!validInpt) {
+                System.out.print("\nPlease enter a port number, or press "
+                        + "enter to default to " + DEFAULT_PORT + ": ");
+                usrInptStr = usrInpt.readLine();
+                if (usrInptStr.matches("^[+-]?\\d+$")) {
+                    port = Integer.parseInt(usrInptStr);
+                    while (!validInpt) {
+                        System.out.print("\nPlease enter the desired number of "
+                                + "connections, or press enter to default to "
+                                + DEFAULT_CONNECTION_NUM + ": ");
+                        usrInptStr = usrInpt.readLine();
+                        if (usrInptStr.matches("^[+-]?\\d+$")) {
+                            connectionNum = Integer.parseInt(usrInptStr);
+                        }  else if (!usrInptStr.equals("")) {
+                            System.out.print("\nInvalid connection number!");
+                        } else {
+                            validInpt = true;
+                        }
+                    }
+                } else if (!usrInptStr.equals("")) {
+                    System.out.print("\nInvalid port number!");
+                }
+            }
+        } catch (IOException ie) {
+            System.err.println("Couldn't get input from user: " + ie);
+        }
+
+        if (usrInptStr.matches("^[+-]?\\d+$")) {
+            port = Integer.parseInt(usrInptStr);
+        }
+
+        System.out.println("Port: " + port);
+        System.out.println("Local IP: " + localIP);
+        System.out.println("Public IP: " + publicIP);
+        System.out.println("Connection number: " + connectionNum);
+        try {
+            mainSocket = new ServerSocket(port);
+        } catch (IOException e) {
+            System.err.println("Unable to open socket: " + e);
+        }
+        runThread();
     }
 
     /**
-     * Thread code to establish i/o with clients.
+     * Thread creation instructions.
      */
-    @Override
-    @SuppressWarnings("SleepWhileInLoop")
-    public void run() {
-        int cmdCount = 0;
-        int curClient = clientPos;
-        String threadName = clientName;
-        while (true) {
+    private static void runThread() {
+        clientArr = new Socket[connectionNum];
+        threadArr = new Thread[connectionNum];
+        clientNames = new String[connectionNum];
+
+        for (int j = 0; j < clientArr.length; j++) {
+            System.out.println("Waiting for connection...");
             try {
-                fromClient = new BufferedReader(
-                        new InputStreamReader(clients[curClient].
-                                getInputStream()));
-                String inptLine;
-                CARD_RETURNED.clear();
-                numCardsReturned = Integer.parseInt(fromClient.readLine());
-                //DEBUG
-                display.setText(display.getText() + "\nCARDS: "
-                        + numCardsReturned);
-                while (CARD_RETURNED.size() < numCardsReturned) {
-                    inptLine = fromClient.readLine();
-                    if (inptLine != null) {
-                        display.setText(display.getText() + "\n: "
-                                + inptLine);
-                        CARD_RETURNED.add(inptLine);
-                    }
-                }
-                //DEBUG
-                cmdCount++;
-                display.setText(display.getText() + "\nCOUNT: " + cmdCount);
-                for (int j = 0; j < numCardsReturned; j++) {
-                    //TODO: add deck implementation; return from AL to deck
-                    //DEBUG
-                    display.setText(display.getText() + "\nhit");
-                    toClient.println("NEW");
-                }
+                clientArr[j] = mainSocket.accept();
+                System.out.println("Connection established with client "
+                        + (j + 1));
+                threadArr[j] = new PokerServer("NAME", j);
+                threadArr[j].start();
             } catch (IOException e) {
-                System.err.
-                        println("Client " + threadName + " was stopped: " + e);
-                boolean loop = true;
-                int loopCount = 0;
-                while (loop && loopCount < MAX_ERROR) {
-                    try {
-                        loop = false;
-                        display.setText(display.getText()
-                                + "\nWaiting for connection...");
-                        try {
-                            Thread.sleep(CONNECTION_WAIT);
-                        } catch (InterruptedException ie) {
-                            System.err.println("Thread interrupted: " + ie);
-                        }
-                        clients[curClient] = connectionSocket.accept();
-                        display.setText(display.getText()
-                                + "\nConnection restablished with "
-                                + threadName + ".");
-                        toClient = new PrintWriter(
-                                clients[curClient].getOutputStream(), true);
-                        fromClient = new BufferedReader(
-                                new InputStreamReader(
-                                        clients[curClient].getInputStream()));
-                        clientNames[curClient] = fromClient.readLine();
-                        for (int j = 0; j < clientNames.length; j++) {
-                            if (curClient != j) {
-                                if (clientNames[curClient].
-                                        equals(clientNames[j])) {
-                                    clientNames[curClient] =
-                                            clientNames[curClient]
-                                            + (curClient + 1);
-                                }
-                            }
-                        }
-                        threadArr[curClient] = new PokerServer(
-                                clientNames[curClient], curClient);
-                        threadArr[curClient].start();
-                    } catch (IOException ie) {
-                        loop = true;
-                        loopCount++;
-                        System.err.println("Client connection could not be "
-                                + "restablished. Tried " + loopCount
-                                + " times: " + ie);
-                        if (loopCount == MAX_ERROR) {
-                            System.err.
-                                    println("Connection failed too many times");
-                        }
-                    }
-                }
+                System.err.println("Unable to connect with client" + e);
             }
         }
     }
@@ -334,129 +190,35 @@ public final class PokerServer extends Thread {
     /**
      * Thread instructions.
      */
-    private static void runThread() {
-        clients = new Socket[connectionNum];
-        threadArr = new Thread[connectionNum];
-        clientNames = new String[connectionNum];
+    @Override
+    public void run() {
+        int curClient = clientPos;
+        String threadName = clientName;
+        String inptLine;
 
-        display.setText(display.getText() + "\nLocal IP: " + ipLocal);
-        display.setText(display.getText() + "\nPublic IP: " + ipPublic);
-
-        for (int j = 0; j < clients.length; j++) {
-            display.setText(display.getText() + "\nWaiting for connection...");
-
+        while (true) {
             try {
-                clients[j] = connectionSocket.accept();
-                display.setText(display.getText()
-                        + "\nClient " + (j + 1) + " connection established.");
-                toClient = new PrintWriter(clients[j].getOutputStream(), true);
-                fromClient = new BufferedReader(
-                        new InputStreamReader(clients[j].getInputStream()));
+                clientInpt = new BufferedReader(
+                        new InputStreamReader(
+                                clientArr[curClient].getInputStream()));
 
-                threadArr[j] = new PokerServer("TEMP", j);
-                threadArr[j].start();
-            } catch (IOException ie) {
-                System.err.println("I/O error with client: " + ie);
-            }
-        }
-    }
-
-    /**
-     * Handles passing variables on button press.
-     */
-    private static class SendHandler implements ActionListener, KeyListener {
-
-        /**
-         * Action on button/enter key press.
-         *
-         * @param ae ActionEvent detected
-         */
-        @Override
-        public void actionPerformed(final ActionEvent ae) {
-            if (ae.getActionCommand().equals("Send")) {
-                sendCount++;
-
-                input = jtfInput.getText();
-
-                switch (sendCount) {
-                    case 1:
-                        int portInt = 0;
-                        try {
-                            portInt = Integer.valueOf(input);
-                        } catch (NumberFormatException nfe) {
-                            System.err.println("Number invalid: " + nfe);
-                        }
-                        if (!input.equals("")) {
-                            portNum = portInt;
-                        } else {
-                            portNum = DEFAULT_PORT;
-                        }
-                        try {
-                            connectionSocket = new ServerSocket(portNum);
-                        } catch (IOException ioe) {
-                            System.err.println("Socket could not be created: "
-                                    + ioe);
-                        }
-                        display.setText(display.getText() + "\nYou: " + input);
-                        mainFrame.repaint();
-                        display.setText(display.getText()
-                                + "\nNumber of connections(enter for default: "
-                                + DEFAULT_CONNECTION_NUM + " )");
-                        break;
-                    case 2:
-                        int numInt = 0;
-                        try {
-                            numInt = Integer.valueOf(input);
-                        } catch (NumberFormatException nfe) {
-                            System.err.println("Number invalid: " + nfe);
-                        }
-                        if (!input.equals("")) {
-                            connectionNum = numInt;
-                        } else {
-                            connectionNum = DEFAULT_CONNECTION_NUM;
-                        }
-                        display.setText(display.getText() + "\nYou: " + input);
-                        jtfInput.setText("");
-                        mainFrame.repaint();
-                        runThread();
-                        break;
-                    default:
-                        break;
+                numCardsRet = Integer.parseInt(clientInpt.readLine());
+                while (CARDS_RETURNED.size() < numCardsRet) {
+                    inptLine = clientInpt.readLine();
+                    if (inptLine != null) {
+                        CARDS_RETURNED.add(inptLine);
+                    }
                 }
+                //TODO tell each client how many cards current client took
+                //TODO add deck implementation
+                for (int j = 0; j < numCardsRet; j++) {
+                    //TODO return each card passed to deck
+                    CARDS_RETURNED.remove(0);
+                    clientOutpt.println("FROM_SERVER"); //TODO grab from deck
+                }
+            } catch (IOException e) {
+                System.err.println("I/O error with client: " + e);
             }
-            jtfInput.setText("");
-            mainFrame.repaint();
-        }
-
-        /**
-         * Invokes handler for server communication.
-         *
-         * @param e KeyEvent detected
-         */
-        @Override
-        public void keyPressed(final KeyEvent e) {
-
-            if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-                actionPerformed(enterSend);
-            }
-        }
-
-        /**
-         * Necessary override, does nothing.
-         *
-         * @param e KeyEvent detected
-         */
-        @Override
-        public void keyReleased(final KeyEvent e) {
-        }
-
-        /**
-         * Necessary override, does nothing.
-         *
-         * @param e KeyEvent detected
-         */
-        @Override
-        public void keyTyped(final KeyEvent e) {
         }
     }
 }
