@@ -86,7 +86,7 @@ public final class PokerServer extends Thread {
     /**
      * Card info.
      */
-    private static ArrayList<String> cardsReturned;
+    private static ArrayList<String> cardsReturned = new ArrayList<>();
 
     /**
      * Sever command send button.
@@ -225,8 +225,8 @@ public final class PokerServer extends Thread {
         mainFrame.pack();
         mainFrame.setVisible(true);
         mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        display.setText("Enter desired port (enter for default: "
-                + DEFAULT_PORT + " )");
+        display.setText("Enter desired port (enter for default: " +
+                DEFAULT_PORT + " )");
     }
 
     /**
@@ -246,77 +246,82 @@ public final class PokerServer extends Thread {
     @Override
     @SuppressWarnings("SleepWhileInLoop")
     public void run() {
+        int cmdCount = 0;
         int curClient = clientPos;
         String threadName = clientName;
-        try {
-            fromClient = new BufferedReader(
-                    new InputStreamReader(clients[curClient].getInputStream()));
-            String inptLine;
-            while (true) {
+        while (true) {
+            try {
+                fromClient = new BufferedReader(
+                        new InputStreamReader(clients[curClient].
+                                getInputStream()));
+                String inptLine;
+                cardsReturned.clear();
                 numCardsReturned = Integer.parseInt(fromClient.readLine());
-                display.setText(display.getText() + "\nCARDS: "
-                        + numCardsReturned);
-                inptLine = fromClient.readLine();
-                if (inptLine != null) {
-                    display.setText(display.getText() + "\n: "
-                            + inptLine);
-                    cardsReturned.add(inptLine);
-                    toClient.println("Test");
-                }
-                if (cardsReturned.size() == numCardsReturned) {
-                    for (int j = 0; j < numCardsReturned; j++) {
-                        //TODO: add deck implementation and return from AL to
-                        //deck
-                        display.setText(display.getText() + "\nhit");
-                        toClient.println("NEW");
+                display.setText(display.getText() + "\nCARDS: " +
+                        numCardsReturned);
+                while (cardsReturned.size() < numCardsReturned) {
+                    inptLine = fromClient.readLine();
+                    if (inptLine != null) {
+                        display.setText(display.getText() + "\n: " +
+                                inptLine);
+                        cardsReturned.add(inptLine);
                     }
                 }
-            }
-        } catch (IOException e) {
-            System.err.println("Client " + threadName + " was stopped: " + e);
-            boolean loop = true;
-            int loopCount = 0;
-            while (loop && loopCount < MAX_ERROR) {
-                try {
-                    loop = false;
-                    display.setText(display.getText()
-                            + "\nWaiting for connection...");
+                cmdCount++;
+                display.setText(display.getText() + "\nCOUNT: " + cmdCount);
+                for (int j = 0; j < numCardsReturned; j++) {
+                    //TODO: add deck implementation and return from AL to
+                    //deck
+                    display.setText(display.getText() + "\nhit");
+                    toClient.println("NEW");
+                }
+            } catch (IOException e) {
+                System.err.
+                        println("Client " + threadName + " was stopped: " + e);
+                boolean loop = true;
+                int loopCount = 0;
+                while (loop && loopCount < MAX_ERROR) {
                     try {
-                        Thread.sleep(CONNECTION_WAIT);
-                    } catch (InterruptedException ie) {
-                        System.err.println("Thread interrupted: " + ie);
-                    }
-                    clients[curClient] = connectionSocket.accept();
-                    display.setText(display.getText()
-                            + "\nConnection restablished with " + threadName
-                            + ".");
-                    toClient = new PrintWriter(
-                            clients[curClient].getOutputStream(), true);
-                    fromClient = new BufferedReader(
-                            new InputStreamReader(
-                                    clients[curClient].getInputStream()));
-                    clientNames[curClient] = fromClient.readLine();
-                    for (int j = 0; j < clientNames.length; j++) {
-                        if (curClient != j) {
-                            if (clientNames[curClient].equals(clientNames[j])) {
-                                clientNames[curClient] = clientNames[curClient]
-                                        + (curClient + 1);
+                        loop = false;
+                        display.setText(display.getText() +
+                                "\nWaiting for connection...");
+                        try {
+                            Thread.sleep(CONNECTION_WAIT);
+                        } catch (InterruptedException ie) {
+                            System.err.println("Thread interrupted: " + ie);
+                        }
+                        clients[curClient] = connectionSocket.accept();
+                        display.setText(display.getText() +
+                                "\nConnection restablished with " + threadName +
+                                ".");
+                        toClient = new PrintWriter(
+                                clients[curClient].getOutputStream(), true);
+                        fromClient = new BufferedReader(
+                                new InputStreamReader(
+                                        clients[curClient].getInputStream()));
+                        clientNames[curClient] = fromClient.readLine();
+                        for (int j = 0; j < clientNames.length; j++) {
+                            if (curClient != j) {
+                                if (clientNames[curClient].
+                                        equals(clientNames[j])) {
+                                    clientNames[curClient] = clientNames[curClient] +
+                                            (curClient + 1);
+                                }
                             }
                         }
-                    }
-                    toClient.println(curClient + 1);
-                    toClient.println("Welcome to the game!");
-                    threadArr[curClient] = new PokerServer(
-                            clientNames[curClient], curClient);
-                    threadArr[curClient].start();
-                } catch (IOException ie) {
-                    loop = true;
-                    loopCount++;
-                    System.err.println("Client connection could not be "
-                            + "restablished. Tried " + loopCount + " times: "
-                            + ie);
-                    if (loopCount == MAX_ERROR) {
-                        System.err.println("Connection failed too many times");
+                        threadArr[curClient] = new PokerServer(
+                                clientNames[curClient], curClient);
+                        threadArr[curClient].start();
+                    } catch (IOException ie) {
+                        loop = true;
+                        loopCount++;
+                        System.err.println("Client connection could not be " +
+                                "restablished. Tried " + loopCount + " times: " +
+                                ie);
+                        if (loopCount == MAX_ERROR) {
+                            System.err.
+                                    println("Connection failed too many times");
+                        }
                     }
                 }
             }
@@ -339,8 +344,8 @@ public final class PokerServer extends Thread {
 
             try {
                 clients[j] = connectionSocket.accept();
-                display.setText(display.getText()
-                        + "\nClient " + (j + 1) + " connection established.");
+                display.setText(display.getText() +
+                        "\nClient " + (j + 1) + " connection established.");
                 toClient = new PrintWriter(clients[j].getOutputStream(), true);
                 fromClient = new BufferedReader(
                         new InputStreamReader(clients[j].getInputStream()));
@@ -386,14 +391,14 @@ public final class PokerServer extends Thread {
                         try {
                             connectionSocket = new ServerSocket(portNum);
                         } catch (IOException ioe) {
-                            System.err.println("Socket could not be created: "
-                                    + ioe);
+                            System.err.println("Socket could not be created: " +
+                                    ioe);
                         }
                         display.setText(display.getText() + "\nYou: " + input);
                         mainFrame.repaint();
-                        display.setText(display.getText()
-                                + "\nNumber of connections(enter for default: "
-                                + DEFAULT_CONNECTION_NUM + " )");
+                        display.setText(display.getText() +
+                                "\nNumber of connections(enter for default: " +
+                                DEFAULT_CONNECTION_NUM + " )");
                         break;
                     case 2:
                         int numInt = 0;

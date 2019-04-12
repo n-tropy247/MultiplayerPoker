@@ -60,7 +60,6 @@ public final class PokerFrame extends Thread {
     /**
      * START Server Info.
      */
-
     /**
      * Port info.
      */
@@ -79,7 +78,7 @@ public final class PokerFrame extends Thread {
     /**
      * List of ints to be constructed from server input.
      */
-    private static ArrayList<String> newCardList;
+    private static ArrayList<String> newCardList = new ArrayList<>();
 
     /**
      * Output to server.
@@ -104,7 +103,6 @@ public final class PokerFrame extends Thread {
     /**
      * END Server Info.
      */
-
     /**
      * Window dimensions.
      */
@@ -152,8 +150,8 @@ public final class PokerFrame extends Thread {
                         socket.getInputStream()));
                 svrOut = new PrintWriter(socket.getOutputStream(), true);
             } catch (IOException e) {
-                System.err.println("Issue opening i/o stream from server: "
-                        + e);
+                System.err.println("Issue opening i/o stream from server: " +
+                         e);
             }
         } catch (UnknownHostException e) {
             System.err.println("Host not found: " + e);
@@ -283,9 +281,8 @@ public final class PokerFrame extends Thread {
             final int cardHeight = cardBack.getHeight(),
                     cardWidth = cardBack.getWidth(),
                     cardSpacing = cardPanelWidth / 20 + cardWidth,
-                    cardNum = 5, leftMargin = cardPanelWidth - cardNum
-                        * cardWidth - cardNum * (cardSpacing - cardWidth);
-
+                    cardNum = 5, leftMargin = cardPanelWidth - cardNum *
+                     cardWidth - cardNum * (cardSpacing - cardWidth);
 
             cards = new Card[cardNum];
             for (int j = 0; j < cardNum; j++) {
@@ -339,6 +336,8 @@ public final class PokerFrame extends Thread {
      * Handles all button events for the frame.
      */
     private static final class ButtonHandler implements ActionListener {
+        
+        private int cmdCount;
 
         /**
          * Possible commands.
@@ -349,6 +348,7 @@ public final class PokerFrame extends Thread {
         public void actionPerformed(final ActionEvent e) {
             String cmd = e.getActionCommand();
             if (cmd.equals(switchCmd)) {
+                numCardsSwitched = 0;
                 for (Card curCard : cards) {
                     if (curCard.isFilled()) {
                         curCard.setSwitch(true);
@@ -361,6 +361,20 @@ public final class PokerFrame extends Thread {
                         svrOut.println(curCard.getType());
                     }
                 }
+                cmdCount++;
+                System.out.println("COUNT: " + cmdCount);
+                while (newCardList.size() < numCardsSwitched) {
+                    try {
+                        svrInput = svrIn.readLine();
+                        System.out.println(svrInput);
+                        newCardList.add(svrInput);
+
+                    } catch (IOException ie) {
+                        System.err.println("Couldn't read from server: " + ie);
+                    }
+                }
+                adjustCardArr();
+                cardPanel.repaint();
             }
         }
     }
@@ -407,10 +421,10 @@ public final class PokerFrame extends Thread {
             mouseX = e.getX();
             mouseY = e.getY();
             for (Card curCard : cards) {
-                curCard.setActive(mouseX >= curCard.getX()
-                        && mouseX <= curCard.getX() + curCard.getW()
-                        && mouseY >= curCard.getY()
-                        && mouseY <= curCard.getY() + curCard.getH());
+                curCard.setActive(mouseX >= curCard.getX() &&
+                        mouseX <= curCard.getX() + curCard.getW() &&
+                        mouseY >= curCard.getY() &&
+                        mouseY <= curCard.getY() + curCard.getH());
             }
             cardPanel.repaint();
         }
