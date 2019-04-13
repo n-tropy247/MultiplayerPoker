@@ -31,7 +31,8 @@ import java.util.ArrayList;
  * Overhauling server.
  *
  * @author Ntropy
- * @version 4.12.2019
+ * @author Sam Cole
+ * @version 4.13.2019
  * @since 4.7.2019
  */
 public final class PokerServer extends Thread {
@@ -49,7 +50,7 @@ public final class PokerServer extends Thread {
     /**
      * Client info; largely unused as of now.
      */
-    private static int clientPos, connectionNum, portNum, numCardsRet;
+    private static int clientPos, connectionNum, numCardsRet;
 
     /**
      * Cards received from client.
@@ -128,6 +129,7 @@ public final class PokerServer extends Thread {
             mainSocket = new ServerSocket(port);
         } catch (IOException e) {
             System.err.println("Unable to open socket: " + e);
+            System.exit(0);
         }
         runThread();
     }
@@ -150,8 +152,9 @@ public final class PokerServer extends Thread {
                         + "enter to default to " + DEFAULT_PORT + ": ");
                 usrInpt = br.readLine();
                 if (usrInpt.matches("^[+-]?\\d+$")) {
-                    connectionNum = Integer.parseInt(usrInpt);
-                } else if (!usrInpt.equals("")) {
+                    port = Integer.parseInt(usrInpt);
+                }
+                if (!usrInpt.equals("")) {
                     System.out.print("\nInvalid port number!");
                 } else {
                     valid = true;
@@ -181,7 +184,8 @@ public final class PokerServer extends Thread {
                 usrInpt = br.readLine();
                 if (usrInpt.matches("^[+-]?\\d+$")) {
                     connectionNum = Integer.parseInt(usrInpt);
-                } else if (!usrInpt.equals("")) {
+                }
+                if (!usrInpt.equals("")) {
                     System.out.print("\nInvalid connection number!");
                 } else {
                     valid = true;
@@ -208,6 +212,7 @@ public final class PokerServer extends Thread {
                         + (j + 1));
                 threadArr[j] = new PokerServer("NAME", j);
                 threadArr[j].start();
+                //TODO better error messaging
             } catch (IOException e) {
                 System.err.println("Unable to connect with client" + e);
             }
@@ -236,6 +241,7 @@ public final class PokerServer extends Thread {
                         CARDS_RETURNED.add(inptLine);
                     }
                 }
+                //TODO card purgatory
                 //TODO tell each client how many cards current client took
                 //TODO add deck implementation
                 for (int j = 0; j < numCardsRet; j++) {
