@@ -117,8 +117,41 @@ public final class PokerServer extends Thread {
         BufferedReader usrInpt = new BufferedReader(new InputStreamReader(
                 System.in));
 
-        int port = getPort(usrInpt);
-        getConnectionNum(usrInpt);
+        int port = DEFAULT_PORT;
+
+        String usrInptStr = "s";
+        boolean validInpt = false;
+        try {
+            while (!validInpt) {
+                System.out.print("\nPlease enter a port number, or press "
+                        + "enter to default to " + DEFAULT_PORT + ": ");
+                usrInptStr = usrInpt.readLine();
+                if (usrInptStr.matches("^[+-]?\\d+$")) {
+                    port = Integer.parseInt(usrInptStr);
+                    while (!validInpt) {
+                        System.out.print("\nPlease enter the desired number of "
+                                + "connections, or press enter to default to "
+                                + DEFAULT_CONNECTION_NUM + ": ");
+                        usrInptStr = usrInpt.readLine();
+                        if (usrInptStr.matches("^[+-]?\\d+$")) {
+                            connectionNum = Integer.parseInt(usrInptStr);
+                        }  else if (!usrInptStr.equals("")) {
+                            System.out.print("\nInvalid connection number!");
+                        } else {
+                            validInpt = true;
+                        }
+                    }
+                } else if (!usrInptStr.equals("")) {
+                    System.out.print("\nInvalid port number!");
+                }
+            }
+        } catch (IOException ie) {
+            System.err.println("Couldn't get input from user: " + ie);
+        }
+
+        if (usrInptStr.matches("^[+-]?\\d+$")) {
+            port = Integer.parseInt(usrInptStr);
+        }
 
         System.out.println("Port: " + port);
         System.out.println("Local IP: " + localIP);
@@ -130,66 +163,6 @@ public final class PokerServer extends Thread {
             System.err.println("Unable to open socket: " + e);
         }
         runThread();
-    }
-
-    /**
-     * Get valid port.
-     *
-     * @param br
-     *           user input reader
-     *
-     * @return valid port number
-     */
-    private static int getPort(final BufferedReader br) {
-        boolean valid = false;
-        int port = DEFAULT_PORT;
-        String usrInpt;
-        try {
-            while (!valid) {
-                System.out.print("\nPlease enter a port number, or press "
-                        + "enter to default to " + DEFAULT_PORT + ": ");
-                usrInpt = br.readLine();
-                if (usrInpt.matches("^[+-]?\\d+$")) {
-                    connectionNum = Integer.parseInt(usrInpt);
-                } else if (!usrInpt.equals("")) {
-                    System.out.print("\nInvalid port number!");
-                } else {
-                    valid = true;
-                }
-            }
-        } catch (IOException e) {
-            System.err.println("Unable to get input from user: " + e);
-        }
-        return port;
-    }
-
-    /**
-     * Get valid connection number.
-     *
-     * @param br
-     *           user input reader
-     */
-    private static void getConnectionNum(final BufferedReader br) {
-        boolean valid = false;
-        String usrInpt;
-        connectionNum = DEFAULT_CONNECTION_NUM;
-        try {
-            while (!valid) {
-                System.out.print("\nPlease enter the desired number of "
-                        + "connections, or press enter to default to "
-                        + DEFAULT_CONNECTION_NUM + ": ");
-                usrInpt = br.readLine();
-                if (usrInpt.matches("^[+-]?\\d+$")) {
-                    connectionNum = Integer.parseInt(usrInpt);
-                } else if (!usrInpt.equals("")) {
-                    System.out.print("\nInvalid connection number!");
-                } else {
-                    valid = true;
-                }
-            }
-        } catch (IOException e) {
-            System.err.println("Unable to get input from user: " + e);
-        }
     }
 
     /**
@@ -220,6 +193,7 @@ public final class PokerServer extends Thread {
     @Override
     public void run() {
         int curClient = clientPos;
+        String threadName = clientName;
         String inptLine;
 
         while (true) {
@@ -227,8 +201,7 @@ public final class PokerServer extends Thread {
                 clientInpt = new BufferedReader(
                         new InputStreamReader(
                                 clientArr[curClient].getInputStream()));
-                clientOutpt = new PrintWriter(clientArr[curClient].
-                        getOutputStream(), true);
+
                 numCardsRet = Integer.parseInt(clientInpt.readLine());
                 while (CARDS_RETURNED.size() < numCardsRet) {
                     inptLine = clientInpt.readLine();
@@ -245,8 +218,6 @@ public final class PokerServer extends Thread {
                 }
             } catch (IOException e) {
                 System.err.println("I/O error with client: " + e);
-                //DEBUG
-                System.exit(0);
             }
         }
     }
