@@ -52,7 +52,7 @@ import javax.swing.border.TitledBorder;
  *
  * @author NTropy
  * @author Sam Cole
- * @version 4.13.2019
+ * @version 4.18.2019
  * @since 4.7.2019
  */
 public final class PokerFrame {
@@ -61,9 +61,19 @@ public final class PokerFrame {
      * START Server Info.
      */
     /**
-     * Port info.
+     * List of Strings to be constructed from server input.
+     */
+    private static final ArrayList<String> NEW_CARD_LIST = new ArrayList<>();
+
+    /**
+     * Default port info.
      */
     private static final int PORT = 22337;
+
+    /**
+     * Default IP info.
+     */
+    private static final String LOCALHOST = "127.0.0.1";
 
     /**
      * Input from server.
@@ -71,34 +81,14 @@ public final class PokerFrame {
     private static BufferedReader svrIn;
 
     /**
-     * Number of cards needed from server.
-     */
-    private static int numCardsSwitched;
-
-    /**
-     * List of Strings to be constructed from server input.
-     */
-    private static final ArrayList<String> NEW_CARD_LIST = new ArrayList<>();
-
-    /**
      * Output to server.
      */
     private static PrintWriter svrOut;
 
     /**
-     * Socket to server.
+     * Socket on which to connect to server.
      */
-    private static Socket socket;
-
-    /**
-     * Input from server in the form of String.
-     */
-    private static String svrInput;
-
-    /**
-     * IP info.
-     */
-    private static final String IP = "127.0.0.1";
+    private Socket socket;
 
     /**
      * END Server Info.
@@ -109,34 +99,14 @@ public final class PokerFrame {
     private static final int FRAME_WIDTH = 1480, FRAME_HEIGHT = 900;
 
     /**
-     * Card images.
-     */
-    private static BufferedImage cardFront, cardBack;
-
-    /**
-     * Card array.
+     * Array of cards being displayed.
      */
     private static Card[] cards;
 
     /**
-     * Card panel.
+     * Custom interactive panel to display card images.
      */
     private static CardPanel cardPanel;
-
-    /**
-     * Button to send cards to be switched out.
-     */
-    private static JButton switchBtn;
-
-    /**
-     * Main window container.
-     */
-    private static JFrame mainFrame;
-
-    /**
-     * JPanels, (in order), button container, center container, main container.
-     */
-    private static JPanel buttonPanel, centerPanel, mainPanel;
 
     /**
      * Constructor, private to avoid instantiation.
@@ -144,7 +114,7 @@ public final class PokerFrame {
     private PokerFrame() {
 
         try {
-            socket = new Socket(IP, PORT);
+            socket = new Socket(LOCALHOST, PORT);
             try {
                 svrIn = new BufferedReader(new InputStreamReader(
                         socket.getInputStream()));
@@ -173,32 +143,34 @@ public final class PokerFrame {
         }
 
         cardPanel = new CardPanel();
-        cardPanel.setBorder(new TitledBorder("Drawn Cards"));
         cardPanel.setOpaque(false);
         cardPanel.addMouseListener(new MouseHandler());
         cardPanel.addMouseMotionListener(new MouseHandler());
 
-        switchBtn = new JButton("Switch");
+        JButton switchBtn = new JButton("Switch");
         switchBtn.addActionListener(new ButtonHandler());
 
-        buttonPanel = new JPanel(new FlowLayout());
-        buttonPanel.setBorder(new TitledBorder("Button panel"));
+        JPanel buttonPanel = new JPanel(new FlowLayout());
         buttonPanel.add(switchBtn);
         buttonPanel.setOpaque(false);
 
-        centerPanel = new JPanel(new BorderLayout());
+        JPanel centerPanel = new JPanel(new BorderLayout());
         centerPanel.add(cardPanel, BorderLayout.CENTER);
         centerPanel.add(buttonPanel, BorderLayout.SOUTH);
-        centerPanel.setBorder(new TitledBorder("Center panel"));
         centerPanel.setOpaque(false);
         centerPanel.setPreferredSize(cardPanel.getPreferredSize());
 
-        mainPanel = new JPanel(new GridBagLayout());
+        JPanel mainPanel = new JPanel(new GridBagLayout());
         mainPanel.add(centerPanel);
-        mainPanel.setBorder(new TitledBorder("Entire window"));
         mainPanel.setBackground(Color.green);
 
-        mainFrame = new JFrame("Poker Client");
+        //TODO DEBUG Borders to help frame window
+        cardPanel.setBorder(new TitledBorder("Drawn Cards"));
+        buttonPanel.setBorder(new TitledBorder("Button panel"));
+        centerPanel.setBorder(new TitledBorder("Center panel"));
+        mainPanel.setBorder(new TitledBorder("Entire window"));
+
+        JFrame mainFrame = new JFrame("Poker Client");
         mainFrame.add(mainPanel);
         mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
@@ -210,7 +182,7 @@ public final class PokerFrame {
     }
 
     /**
-     * Handle adjustment to Card array.
+     * Handle adjustments to Card array following server input.
      */
     private static void adjustCardArr() {
         int cardH, cardW, cardX, cardY;
@@ -227,9 +199,10 @@ public final class PokerFrame {
     }
 
     /**
-     * Create main frame.
+     * Create application thread.
      *
-     * @param args command-line arguments; unused here
+     * @param args
+     *             command-line arguments; unused here
      */
     public static void main(final String[] args) {
         SwingUtilities.invokeLater(() -> {
@@ -243,14 +216,19 @@ public final class PokerFrame {
     private static final class CardPanel extends JPanel {
 
         /**
-         * Card container dimensions.
+         * Card panel dimensions.
          */
         private final int widthAdjust = 200, heightAdjust = 150,
                 cardPanelWidth = FRAME_WIDTH - widthAdjust,
                 cardPanelHeight = FRAME_HEIGHT - heightAdjust;
 
         /**
-         * Default constructor.
+         * Card image containers.
+         */
+        private static BufferedImage cardFront, cardBack;
+
+        /**
+         * Create images from file, get dimensions, populate card array.
          */
         private CardPanel() {
             try {
@@ -268,6 +246,7 @@ public final class PokerFrame {
                     * cardWidth - cardNum * (cardSpacing - cardWidth);
 
             cards = new Card[cardNum];
+            //TODO grab card names from server on initialization
             for (int j = 0; j < cardNum; j++) {
                 if (j == 0) {
                     cards[0] = new Card(leftMargin,
@@ -290,7 +269,8 @@ public final class PokerFrame {
         /**
          * Draw in components.
          *
-         * @param g Graphics of JPanel
+         * @param g
+         *          Graphics of JPanel
          */
         private void doDrawing(final Graphics g) {
             final int border = 2;
@@ -325,6 +305,11 @@ public final class PokerFrame {
          */
         private final String switchCmd = "Switch";
 
+        /**
+         * Number of cards switched out.
+         */
+        private int numCardsSwitched;
+
         @Override
         public void actionPerformed(final ActionEvent e) {
             String cmd = e.getActionCommand();
@@ -342,6 +327,7 @@ public final class PokerFrame {
                         svrOut.println(curCard.getType());
                     }
                 }
+                String svrInput;
                 while (NEW_CARD_LIST.size() < numCardsSwitched) {
                     try {
                         svrInput = svrIn.readLine();
