@@ -52,7 +52,7 @@ import javax.swing.border.TitledBorder;
  *
  * @author NTropy
  * @author Sam Cole
- * @version 4.12.2019
+ * @version 4.13.2019
  * @since 4.7.2019
  */
 public final class PokerFrame {
@@ -76,7 +76,7 @@ public final class PokerFrame {
     private static int numCardsSwitched;
 
     /**
-     * List of ints to be constructed from server input.
+     * List of Strings to be constructed from server input.
      */
     private static final ArrayList<String> NEW_CARD_LIST = new ArrayList<>();
 
@@ -302,7 +302,7 @@ public final class PokerFrame {
                             curCard.getW() + 2 * border,
                             curCard.getH() + 2 * border);
                 }
-                if (curCard.isFilled()) {
+                if (curCard.isFlipped()) {
                     g.drawImage(cardBack, curCard.getX(), curCard.getY(), null);
                 }
             }
@@ -321,11 +321,6 @@ public final class PokerFrame {
     private static final class ButtonHandler implements ActionListener {
 
         /**
-         * Counts successful send for debug purposes.
-         */
-        private int cmdCount;
-
-        /**
          * Possible commands.
          */
         private final String switchCmd = "Switch";
@@ -336,7 +331,7 @@ public final class PokerFrame {
             if (cmd.equals(switchCmd)) {
                 numCardsSwitched = 0;
                 for (Card curCard : cards) {
-                    if (curCard.isFilled()) {
+                    if (curCard.isFlipped()) {
                         curCard.setSwitch(true);
                         numCardsSwitched++;
                     }
@@ -347,14 +342,9 @@ public final class PokerFrame {
                         svrOut.println(curCard.getType());
                     }
                 }
-                cmdCount++;
-                //DEBUG
-                System.out.println("COUNT: " + cmdCount);
                 while (NEW_CARD_LIST.size() < numCardsSwitched) {
                     try {
                         svrInput = svrIn.readLine();
-                        //DEBUG
-                        System.out.println(svrInput);
                         NEW_CARD_LIST.add(svrInput);
 
                     } catch (IOException ie) {
@@ -382,7 +372,7 @@ public final class PokerFrame {
         public void mousePressed(final MouseEvent e) {
             for (Card curCard : cards) {
                 if (curCard.isActive()) {
-                    curCard.setFill(!curCard.isFilled());
+                    curCard.setFill(!curCard.isFlipped());
                 }
             }
             cardPanel.repaint();

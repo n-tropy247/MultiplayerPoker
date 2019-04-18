@@ -22,14 +22,14 @@ package ntropy.online.multiplayerpoker;
  *
  * @author NTropy
  * @author Sam Cole
- * @version 4.11.2019
+ * @version 4.13.2019
  * @since 4.8.2019
  */
 public final class Card {
 
     /**
      * Card type is to be recognized by String.
-     * For example, "DiamondKing" or "Clubs3"
+     * For example, "DiamondKing" or "ClubsThree"
      */
     private final String cardType;
 
@@ -41,7 +41,7 @@ public final class Card {
     /**
      * Card states.
      */
-    private boolean active = false, fill = false, toSwitch = false;
+    private boolean active = false, flip = false, toSwitch = false;
 
     /**
      * Default constructor.
@@ -127,10 +127,10 @@ public final class Card {
     /**
      * Report whether card is filled in.
      *
-     * @return fill
+     * @return flip
      */
-    public boolean isFilled() {
-        return fill;
+    public boolean isFlipped() {
+        return flip;
     }
 
     /**
@@ -145,10 +145,10 @@ public final class Card {
     /**
      * Change whether card is filled in.
      *
-     * @param b new value of fill
+     * @param b new value of flip
      */
     public void setFill(final boolean b) {
-        fill = b;
+        flip = b;
     }
 
     /**

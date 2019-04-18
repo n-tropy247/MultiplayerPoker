@@ -26,6 +26,9 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * Overhauling server.
@@ -53,9 +56,10 @@ public final class PokerServer extends Thread {
     private static int clientPos, connectionNum, numCardsRet;
 
     /**
-     * Cards received from client.
+     * Card handling.
      */
-    private static final ArrayList<String> CARDS_RETURNED = new ArrayList<>();
+    private static final ArrayList<String> CARD_STAGING = new ArrayList<>(),
+            DECK = new ArrayList<>();
 
     /**
      * Output to client.
@@ -118,6 +122,9 @@ public final class PokerServer extends Thread {
         BufferedReader usrInpt = new BufferedReader(new InputStreamReader(
                 System.in));
 
+        initializeDeck();
+        shuffleDeck();
+
         int port = getPort(usrInpt);
         getConnectionNum(usrInpt);
 
@@ -132,6 +139,47 @@ public final class PokerServer extends Thread {
             System.exit(0);
         }
         runThread();
+    }
+
+    /**
+     * Create and shuffle deck of cards.
+     */
+    private static void initializeDeck() {
+        final String[] cardTypes = {"Ace", "Two", "Three", "Four", "Five",
+            "Six", "Seven", "Eight", "Nine", "Ten", "Jack", "Queen", "King"};
+        final String[] suits = {"Clubs", "Hearts", "Diamonds", "Spades"};
+        for (String curSuit : suits) {
+            for (String curType : cardTypes) {
+                DECK.add(curSuit + curType);
+            }
+        }
+    }
+
+    /**
+     * Shuffle deck the standard 7 times.
+     * Probably unnecessary, but traditional.
+     */
+    private static void shuffleDeck() {
+        final int standardShuffle = 7; //rule of thumb: shuffle 7 times
+        for (int j = 0; j < standardShuffle; j++) {
+            Collections.shuffle(DECK);
+        }
+    }
+
+    /**
+     * Deals a hand to be passed to client.
+     *
+     * @param handSize
+     *          size of hand needed
+     * @return hand of cards
+     */
+    private static ArrayList<String> dealHand(final int handSize) {
+        List<String> selection = DECK.subList(DECK.size() - handSize,
+                DECK.size());
+        ArrayList<String> hand = new ArrayList<>(selection);
+        DECK.removeAll(hand);
+        selection.clear();
+        return hand;
     }
 
     /**
@@ -235,20 +283,24 @@ public final class PokerServer extends Thread {
                 clientOutpt = new PrintWriter(clientArr[curClient].
                         getOutputStream(), true);
                 numCardsRet = Integer.parseInt(clientInpt.readLine());
-                while (CARDS_RETURNED.size() < numCardsRet) {
+                while (CARD_STAGING.size() < numCardsRet) {
                     inptLine = clientInpt.readLine();
                     if (inptLine != null) {
-                        CARDS_RETURNED.add(inptLine);
+                        CARD_STAGING.add(inptLine);
                     }
                 }
-                //TODO card purgatory
+
+                //TODO card staging that adds back cards turned in after the
+                //current round
+
                 //TODO tell each client how many cards current client took
+
                 //TODO add deck implementation
-                for (int j = 0; j < numCardsRet; j++) {
-                    //TODO return each card passed to deck
-                    CARDS_RETURNED.remove(0);
-                    clientOutpt.println("FROM_SERVER"); //TODO grab from deck
-                }
+                ArrayList<String> passBack = dealHand(numCardsRet);
+                passBack.forEach((String s) -> {
+                    clientOutpt.println(s);
+                });
+                passBack.clear();
             } catch (IOException e) {
                 System.err.println("I/O error with client: " + e);
                 //DEBUG
