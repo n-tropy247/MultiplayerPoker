@@ -109,7 +109,7 @@ public final class PokerFrame {
     private static CardPanel cardPanel;
 
     /**
-     * Constructor, private to avoid instantiation.
+     * Create application components on object creation.
      */
     private PokerFrame() {
 
