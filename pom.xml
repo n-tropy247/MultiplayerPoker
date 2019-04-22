@@ -10,4 +10,20 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
     </properties>
+	<reporting>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<version>3.1.0</version>
+			<configuration>
+				<outputDirectory>${basedir}/docs</outputDirectory>
+				<stylesheetfile>${basedir}/docs/stylesheet.css</stylesheetfile>
+				<reportOutputDirectory>${basedir}/docs</reportOutputDirectory>
+				<show>private</show>
+				<windowtitle>MultiplayerPoker></windowtitle>
+			</configuration>
+		</plugin>
+		</plugins>
+	</reporting>
 </project>
