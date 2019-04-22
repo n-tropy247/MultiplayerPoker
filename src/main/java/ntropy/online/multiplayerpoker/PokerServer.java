@@ -20,25 +20,28 @@ package ntropy.online.multiplayerpoker;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.ServerSocket;
-import java.net.Socket;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Consumer;
 
 /**
- * Overhauling server.
+ * Server to handle poker deck.
+ * //TODO betting system
  *
  * @author Ntropy
  * @author Sam Cole
- * @version 4.13.2019
+ * @version 4.22.2019
  * @since 4.7.2019
  */
-public final class PokerServer extends Thread {
+public final class PokerServer {
+
+    /**
+     * Card handling.
+     */
+    private static final ArrayList<String> DECK = new ArrayList<>();
 
     /**
      * Default connection info.
@@ -46,25 +49,14 @@ public final class PokerServer extends Thread {
     private static final int DEFAULT_PORT = 22337, DEFAULT_CONNECTION_NUM = 1;
 
     /**
-     * Input from client.
-     */
-    private static BufferedReader clientInpt;
-
-    /**
      * Client info; largely unused as of now.
      */
-    private static int clientPos, connectionNum, numCardsRet;
+    private static int connectionNum;
 
     /**
-     * Card handling.
+     * Array of clients.
      */
-    private static final ArrayList<String> CARD_STAGING = new ArrayList<>(),
-            DECK = new ArrayList<>();
-
-    /**
-     * Output to client.
-     */
-    private static PrintWriter clientOutpt;
+    private static ServerConnection[] clients;
 
     /**
      * Socket for connection to clients.
@@ -72,36 +64,14 @@ public final class PokerServer extends Thread {
     private static ServerSocket mainSocket;
 
     /**
-     * Sockets on which clients communicate.
-     */
-    private static Socket[] clientArr;
-
-    /**
-     * Names of clients; unused as of yet.
-     */
-    private static String[] clientNames;
-
-    /**
      * Connection info for clients.
      */
-    private static String clientName, clientInputStr, localIP, publicIP;
+    private static String localIP, publicIP;
 
     /**
-     * Client connection threads.
+     * Private constructor to avoid instantiation.
      */
-    private static Thread[] threadArr;
-
-    /**
-     * Constructor, invoked to create client threads.
-     *
-     * @param n
-     *          name of client
-     * @param c
-     *          position of client in array
-     */
-    private PokerServer(final String n, final int c) {
-        clientPos = c;
-        clientName = n;
+    private PokerServer() {
     }
 
     /**
@@ -136,6 +106,7 @@ public final class PokerServer extends Thread {
             mainSocket = new ServerSocket(port);
         } catch (IOException e) {
             System.err.println("Unable to open socket: " + e);
+            //DEBUG
             System.exit(0);
         }
         runThread();
@@ -167,18 +138,28 @@ public final class PokerServer extends Thread {
     }
 
     /**
+     * Receive staged cards from client.
+     *
+     * @param arr
+     *          staged cards return by client
+     */
+    public static void returnStage(final ArrayList<String> arr) {
+        //TODO return cards to deck as needed.
+    }
+
+    /**
      * Deals a hand to be passed to client.
      *
      * @param handSize
      *          size of hand needed
      * @return hand of cards
      */
-    private static ArrayList<String> dealHand(final int handSize) {
+    public static ArrayList<String> dealHand(final int handSize) {
         List<String> selection = DECK.subList(DECK.size() - handSize,
                 DECK.size());
         ArrayList<String> hand = new ArrayList<>(selection);
-        DECK.removeAll(hand);
         selection.clear();
+        DECK.removeAll(hand);
         return hand;
     }
 
@@ -242,69 +223,29 @@ public final class PokerServer extends Thread {
         } catch (IOException e) {
             System.err.println("Unable to get input from user: " + e);
         }
+        try {
+            br.close();
+        } catch (IOException e) {
+            System.err.println("Unable to close usr input reader: " + e);
+        }
     }
 
     /**
      * Thread creation instructions.
      */
     private static void runThread() {
-        clientArr = new Socket[connectionNum];
-        threadArr = new Thread[connectionNum];
-        clientNames = new String[connectionNum];
-
-        for (int j = 0; j < clientArr.length; j++) {
+        clients = new ServerConnection[connectionNum];
+        for (int j = 0; j < clients.length; j++) {
             System.out.println("Waiting for connection...");
             try {
-                clientArr[j] = mainSocket.accept();
+                clients[j] = new ServerConnection("NAME");
+                clients[j].connect(mainSocket.accept());
                 System.out.println("Connection established with client "
                         + (j + 1));
-                threadArr[j] = new PokerServer("NAME", j);
-                threadArr[j].start();
+                clients[j].start();
                 //TODO better error messaging
             } catch (IOException e) {
                 System.err.println("Unable to connect with client" + e);
-            }
-        }
-    }
-
-    /**
-     * Thread instructions.
-     */
-    @Override
-    public void run() {
-        int curClient = clientPos;
-        String inptLine;
-
-        while (true) {
-            try {
-                clientInpt = new BufferedReader(
-                        new InputStreamReader(
-                                clientArr[curClient].getInputStream()));
-                clientOutpt = new PrintWriter(clientArr[curClient].
-                        getOutputStream(), true);
-                numCardsRet = Integer.parseInt(clientInpt.readLine());
-                while (CARD_STAGING.size() < numCardsRet) {
-                    inptLine = clientInpt.readLine();
-                    if (inptLine != null) {
-                        CARD_STAGING.add(inptLine);
-                    }
-                }
-
-                //TODO card staging that adds back cards turned in after the
-                //current round
-
-                //TODO tell each client how many cards current client took
-
-                //TODO add deck implementation
-                ArrayList<String> passBack = dealHand(numCardsRet);
-                passBack.forEach((String s) -> {
-                    clientOutpt.println(s);
-                });
-                passBack.clear();
-            } catch (IOException e) {
-                System.err.println("I/O error with client: " + e);
-                //DEBUG
-                System.exit(0);
             }
         }
     }
