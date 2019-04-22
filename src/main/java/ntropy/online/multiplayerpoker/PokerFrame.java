@@ -52,7 +52,7 @@ import javax.swing.border.TitledBorder;
  *
  * @author NTropy
  * @author Sam Cole
- * @version 4.18.2019
+ * @version 4.22.2019
  * @since 4.7.2019
  */
 public final class PokerFrame {
@@ -107,6 +107,11 @@ public final class PokerFrame {
      * Custom interactive panel to display card images.
      */
     private static CardPanel cardPanel;
+
+    /**
+     * Main window container for application.
+     */
+    private final JFrame mainFrame;
 
     /**
      * Create application components on object creation.
@@ -164,13 +169,13 @@ public final class PokerFrame {
         mainPanel.add(centerPanel);
         mainPanel.setBackground(Color.green);
 
-        //TODO DEBUG Borders to help frame window
+        //DEBUG Borders to help frame window
         cardPanel.setBorder(new TitledBorder("Drawn Cards"));
         buttonPanel.setBorder(new TitledBorder("Button panel"));
         centerPanel.setBorder(new TitledBorder("Center panel"));
         mainPanel.setBorder(new TitledBorder("Entire window"));
 
-        JFrame mainFrame = new JFrame("Poker Client");
+        mainFrame = new JFrame("Poker Client");
         mainFrame.add(mainPanel);
         mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
@@ -178,7 +183,6 @@ public final class PokerFrame {
         mainFrame.setLocationByPlatform(true);
         mainFrame.setResizable(false);
         mainFrame.pack();
-        mainFrame.setVisible(true);
     }
 
     /**
@@ -207,6 +211,7 @@ public final class PokerFrame {
     public static void main(final String[] args) {
         SwingUtilities.invokeLater(() -> {
             PokerFrame pokerFrame = new PokerFrame();
+            pokerFrame.mainFrame.setVisible(true);
         });
     }
 
@@ -332,9 +337,10 @@ public final class PokerFrame {
                     try {
                         svrInput = svrIn.readLine();
                         NEW_CARD_LIST.add(svrInput);
-
                     } catch (IOException ie) {
                         System.err.println("Couldn't read from server: " + ie);
+                        //DEBUG
+                        System.exit(0);
                     }
                 }
                 adjustCardArr();
