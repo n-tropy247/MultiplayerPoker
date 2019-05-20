@@ -105,7 +105,7 @@ public final class ServerConnection extends Thread {
                 //TODO card staging that adds back cards turned in after the
                 //current round
                 //TODO tell each client how many cards current client took
-                //TODO add deck implementation
+                //TODO improve deck implementation
             } catch (IOException e) {
                 System.err.println("I/O error with client: " + e);
                 clientOutpt.close();

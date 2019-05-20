@@ -33,7 +33,7 @@ import java.util.List;
  *
  * @author Ntropy
  * @author Sam Cole
- * @version 4.22.2019
+ * @version 5.20.2019
  * @since 4.7.2019
  */
 public final class PokerServer {
