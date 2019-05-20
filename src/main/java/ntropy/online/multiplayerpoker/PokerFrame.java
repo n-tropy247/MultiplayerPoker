@@ -222,6 +222,7 @@ public final class PokerFrame {
 
         /**
          * Card panel dimensions.
+         * //TODO find a way to intuitively scale this
          */
         private final int widthAdjust = 200, heightAdjust = 150,
                 cardPanelWidth = FRAME_WIDTH - widthAdjust,
