@@ -141,7 +141,7 @@ public final class PokerServer {
      * Receive staged cards from client.
      *
      * @param arr
-     *          staged cards return by client
+     *            staged cards return by client
      */
     public static void returnStage(final ArrayList<String> arr) {
         arr.forEach((String s) -> {
@@ -153,7 +153,8 @@ public final class PokerServer {
      * Deals a hand to be passed to client.
      *
      * @param handSize
-     *          size of hand needed
+     *                 size of hand needed
+     *
      * @return hand of cards
      */
     public static ArrayList<String> dealHand(final int handSize) {

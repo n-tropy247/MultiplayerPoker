@@ -78,10 +78,10 @@ public final class ServerConnection extends Thread {
         int numCardsRet;
         ArrayList<String> passBack;
         try {
-        clientInpt = new BufferedReader(
-                new InputStreamReader(
-                        connection.getInputStream()));
-        clientOutpt = new PrintWriter(connection.getOutputStream(), true);
+            clientInpt = new BufferedReader(
+                    new InputStreamReader(
+                            connection.getInputStream()));
+            clientOutpt = new PrintWriter(connection.getOutputStream(), true);
         } catch (IOException e) {
             System.err.println("I/O issue with client: " + e);
             //DEBUG

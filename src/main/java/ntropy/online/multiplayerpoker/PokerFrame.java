@@ -205,8 +205,7 @@ public final class PokerFrame {
     /**
      * Create application thread.
      *
-     * @param args
-     *             command-line arguments; unused here
+     * @param args command-line arguments; unused here
      */
     public static void main(final String[] args) {
         SwingUtilities.invokeLater(() -> {
@@ -221,8 +220,7 @@ public final class PokerFrame {
     private static final class CardPanel extends JPanel {
 
         /**
-         * Card panel dimensions.
-         * //TODO find a way to intuitively scale this
+         * Card panel dimensions. //TODO find a way to intuitively scale this
          */
         private final int widthAdjust = 200, heightAdjust = 150,
                 cardPanelWidth = FRAME_WIDTH - widthAdjust,
@@ -275,8 +273,7 @@ public final class PokerFrame {
         /**
          * Draw in components.
          *
-         * @param g
-         *          Graphics of JPanel
+         * @param g Graphics of JPanel
          */
         private void doDrawing(final Graphics g) {
             final int border = 2;
