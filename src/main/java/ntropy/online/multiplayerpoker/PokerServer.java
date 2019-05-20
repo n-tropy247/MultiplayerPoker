@@ -144,7 +144,9 @@ public final class PokerServer {
      *          staged cards return by client
      */
     public static void returnStage(final ArrayList<String> arr) {
-        //TODO return cards to deck as needed.
+        arr.forEach((String s) -> {
+            DECK.add(s);
+        });
     }
 
     /**
