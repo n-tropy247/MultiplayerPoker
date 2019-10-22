@@ -29,25 +29,10 @@ import java.util.ArrayList;
  *
  * @author NTropy
  * @author Sam Cole
- * @version 4.22.2019
+ * @version 10.22.2019
  * @since 4.22.2019
  */
 public final class ServerConnection extends Thread {
-
-    /**
-     * Array of cards returned.
-     */
-    private final ArrayList<String> cardStaging = new ArrayList<>();
-
-    /**
-     * Input from client.
-     */
-    private BufferedReader clientInpt;
-
-    /**
-     * Output to client.
-     */
-    private PrintWriter clientOutpt;
 
     /**
      * Connection to server.
@@ -55,18 +40,9 @@ public final class ServerConnection extends Thread {
     private Socket connection;
 
     /**
-     * Name of client.
-     */
-    private final String name;
-
-    /**
      * Constructor for each connection thread.
-     *
-     * @param n
-     *          name of client
      */
-    public ServerConnection(final String n) {
-        name = n;
+    public ServerConnection() {
     }
 
     /**
@@ -78,53 +54,55 @@ public final class ServerConnection extends Thread {
         int numCardsRet;
         ArrayList<String> passBack;
         try {
-            clientInpt = new BufferedReader(
+            BufferedReader clientInpt = new BufferedReader(
                     new InputStreamReader(
                             connection.getInputStream()));
-            clientOutpt = new PrintWriter(connection.getOutputStream(), true);
+            PrintWriter clientOutpt = new PrintWriter(
+                    connection.getOutputStream(), true);
+            while (true) {
+                try {
+                    numCardsRet = Integer.parseInt(clientInpt.readLine());
+                    ArrayList<String> cardStaging = new ArrayList<>();
+                    while (cardStaging.size() < numCardsRet) {
+                        inptLine = clientInpt.readLine();
+                        if (inptLine != null) {
+                            cardStaging.add(inptLine);
+                        }
+                    }
+                    PokerServer.returnStage(cardStaging);
+                    cardStaging.clear();
+                    passBack = PokerServer.dealHand(numCardsRet);
+                    passBack.forEach((String s) -> {
+                        clientOutpt.println(s);
+                    });
+                    //TODO card staging that adds back cards turned in after the
+                    //current round
+                    //TODO tell each client how many cards current client took
+                    //TODO improve deck implementation
+                } catch (IOException e) {
+                    System.err.println("I/O error with client: " + e);
+                    clientOutpt.close();
+                    try {
+                        clientInpt.close();
+                    } catch (IOException ie) {
+                        System.err.println("Unable to close server input: "
+                                + ie);
+                    }
+                    //DEBUG
+                    System.exit(0);
+                }
+            }
         } catch (IOException e) {
             System.err.println("I/O issue with client: " + e);
             //DEBUG
             System.exit(0);
-        }
-        while (true) {
-            try {
-                numCardsRet = Integer.parseInt(clientInpt.readLine());
-                while (cardStaging.size() < numCardsRet) {
-                    inptLine = clientInpt.readLine();
-                    if (inptLine != null) {
-                        cardStaging.add(inptLine);
-                    }
-                }
-                PokerServer.returnStage(cardStaging);
-                cardStaging.clear();
-                passBack = PokerServer.dealHand(numCardsRet);
-                passBack.forEach((String s) -> {
-                    clientOutpt.println(s);
-                });
-                //TODO card staging that adds back cards turned in after the
-                //current round
-                //TODO tell each client how many cards current client took
-                //TODO improve deck implementation
-            } catch (IOException e) {
-                System.err.println("I/O error with client: " + e);
-                clientOutpt.close();
-                try {
-                    clientInpt.close();
-                } catch (IOException ie) {
-                    System.err.println("Unable to close server input: " + ie);
-                }
-                //DEBUG
-                System.exit(0);
-            }
         }
     }
 
     /**
      * Accepts connection to main server socket.
      *
-     * @param s
-     *          server socket passed
+     * @param s server socket passed
      */
     public void connect(final Socket s) {
         connection = s;

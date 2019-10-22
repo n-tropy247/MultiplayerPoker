@@ -28,45 +28,19 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Server to handle poker deck.
- * //TODO betting system
+ * Server to handle poker deck. //TODO betting system
  *
  * @author Ntropy
  * @author Sam Cole
- * @version 5.20.2019
+ * @version 10.22.2019
  * @since 4.7.2019
  */
 public final class PokerServer {
 
     /**
-     * Card handling.
+     * Full deck of cards.
      */
     private static final ArrayList<String> DECK = new ArrayList<>();
-
-    /**
-     * Default connection info.
-     */
-    private static final int DEFAULT_PORT = 22337, DEFAULT_CONNECTION_NUM = 1;
-
-    /**
-     * Client info; largely unused as of now.
-     */
-    private static int connectionNum;
-
-    /**
-     * Array of clients.
-     */
-    private static ServerConnection[] clients;
-
-    /**
-     * Socket for connection to clients.
-     */
-    private static ServerSocket mainSocket;
-
-    /**
-     * Connection info for clients.
-     */
-    private static String localIP, publicIP;
 
     /**
      * Private constructor to avoid instantiation.
@@ -77,10 +51,10 @@ public final class PokerServer {
     /**
      * Main method.
      *
-     * @param args
-     *             command-line arguments; unused here as of yet
+     * @param args command-line arguments; unused here as of yet
      */
     public static void main(final String[] args) {
+        String localIP = "", publicIP = "";
         try {
             localIP = InetAddress.getLocalHost().getHostAddress().trim();
             publicIP = (new BufferedReader(new InputStreamReader((new URL(
@@ -95,21 +69,24 @@ public final class PokerServer {
         initializeDeck();
         shuffleDeck();
 
-        int port = getPort(usrInpt);
-        getConnectionNum(usrInpt);
+        final int defaultPort = 22337;
+        int port = getPort(usrInpt, defaultPort);
+
+        int connectionNum = 1;
+        connectionNum = getConnectionNum(usrInpt, connectionNum);
 
         System.out.println("Port: " + port);
         System.out.println("Local IP: " + localIP);
         System.out.println("Public IP: " + publicIP);
         System.out.println("Connection number: " + connectionNum);
         try {
-            mainSocket = new ServerSocket(port);
+            ServerSocket mainSocket = new ServerSocket(port);
+            runThread(connectionNum, mainSocket);
         } catch (IOException e) {
             System.err.println("Unable to open socket: " + e);
             //DEBUG
             System.exit(0);
         }
-        runThread();
     }
 
     /**
@@ -127,8 +104,7 @@ public final class PokerServer {
     }
 
     /**
-     * Shuffle deck the standard 7 times.
-     * Probably unnecessary, but traditional.
+     * Shuffle deck the standard 7 times. Probably unnecessary, but traditional.
      */
     private static void shuffleDeck() {
         final int standardShuffle = 7; //rule of thumb: shuffle 7 times
@@ -140,8 +116,7 @@ public final class PokerServer {
     /**
      * Receive staged cards from client.
      *
-     * @param arr
-     *            staged cards return by client
+     * @param arr staged cards return by client
      */
     public static void returnStage(final ArrayList<String> arr) {
         arr.forEach((String s) -> {
@@ -152,8 +127,7 @@ public final class PokerServer {
     /**
      * Deals a hand to be passed to client.
      *
-     * @param handSize
-     *                 size of hand needed
+     * @param handSize size of hand needed
      *
      * @return hand of cards
      */
@@ -169,19 +143,19 @@ public final class PokerServer {
     /**
      * Get valid port.
      *
-     * @param br
-     *           user input reader
+     * @param br user input reader
+     * @param defaultPort default port number
      *
      * @return valid port number
      */
-    private static int getPort(final BufferedReader br) {
+    private static int getPort(final BufferedReader br, final int defaultPort) {
         boolean valid = false;
-        int port = DEFAULT_PORT;
+        int port = defaultPort;
         String usrInpt;
         try {
             while (!valid) {
                 System.out.print("\nPlease enter a port number, or press "
-                        + "enter to default to " + DEFAULT_PORT + ": ");
+                        + "enter to default to " + defaultPort + ": ");
                 usrInpt = br.readLine();
                 if (usrInpt.matches("^[+-]?\\d+$")) {
                     port = Integer.parseInt(usrInpt);
@@ -201,18 +175,21 @@ public final class PokerServer {
     /**
      * Get valid connection number.
      *
-     * @param br
-     *           user input reader
+     * @param br user input reader
+     * @param defaultNum default number of client connections
+     *
+     * @return desired number of client connections
      */
-    private static void getConnectionNum(final BufferedReader br) {
+    private static int getConnectionNum(final BufferedReader br,
+            final int defaultNum) {
         boolean valid = false;
         String usrInpt;
-        connectionNum = DEFAULT_CONNECTION_NUM;
+        int connectionNum = defaultNum;
         try {
             while (!valid) {
                 System.out.print("\nPlease enter the desired number of "
                         + "connections, or press enter to default to "
-                        + DEFAULT_CONNECTION_NUM + ": ");
+                        + defaultNum + ": ");
                 usrInpt = br.readLine();
                 if (usrInpt.matches("^[+-]?\\d+$")) {
                     connectionNum = Integer.parseInt(usrInpt);
@@ -231,17 +208,22 @@ public final class PokerServer {
         } catch (IOException e) {
             System.err.println("Unable to close usr input reader: " + e);
         }
+        return connectionNum;
     }
 
     /**
      * Thread creation instructions.
+     *
+     * @param connectionNum number of client connections to create
+     * @param mainSocket socket to which clients will connect.
      */
-    private static void runThread() {
-        clients = new ServerConnection[connectionNum];
+    private static void runThread(final int connectionNum,
+            final ServerSocket mainSocket) {
+        ServerConnection[] clients = new ServerConnection[connectionNum];
         for (int j = 0; j < clients.length; j++) {
             System.out.println("Waiting for connection...");
             try {
-                clients[j] = new ServerConnection("NAME");
+                clients[j] = new ServerConnection();
                 clients[j].connect(mainSocket.accept());
                 System.out.println("Connection established with client "
                         + (j + 1));

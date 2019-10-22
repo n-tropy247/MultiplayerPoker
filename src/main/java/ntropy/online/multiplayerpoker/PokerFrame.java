@@ -52,61 +52,31 @@ import javax.swing.border.TitledBorder;
  *
  * @author NTropy
  * @author Sam Cole
- * @version 4.22.2019
+ * @version 10.22.2019
  * @since 4.7.2019
  */
 public final class PokerFrame {
 
     /**
-     * START Server Info.
-     */
-    /**
-     * List of Strings to be constructed from server input.
-     */
-    private static final ArrayList<String> NEW_CARD_LIST = new ArrayList<>();
-
-    /**
-     * Default port info.
-     */
-    private static final int PORT = 22337;
-
-    /**
-     * Default IP info.
-     */
-    private static final String LOCALHOST = "127.0.0.1";
-
-    /**
      * Input from server.
      */
-    private static BufferedReader svrIn;
+    private BufferedReader svrIn;
 
     /**
      * Output to server.
      */
-    private static PrintWriter svrOut;
+    private PrintWriter svrOut;
 
-    /**
-     * Socket on which to connect to server.
-     */
-    private Socket socket;
-
-    /**
-     * END Server Info.
-     */
     /**
      * Window dimensions.
+     * TODO make window scalable by user
      */
-    private static final int FRAME_WIDTH = 1480, FRAME_HEIGHT = 900;
-
-    /**
-     * Array of cards being displayed.
-     */
-    private static Card[] cards;
+    private final int frameWidth = 1480, frameHeight = 900;
 
     /**
      * Custom interactive panel to display card images.
      */
-    private static CardPanel cardPanel;
+    private final CardPanel cardPanel;
 
     /**
      * Main window container for application.
@@ -114,12 +84,20 @@ public final class PokerFrame {
     private final JFrame mainFrame;
 
     /**
+     * Array of cards being displayed.
+     */
+    private Card[] cards;
+
+    /**
      * Create application components on object creation.
      */
     private PokerFrame() {
+        final int defaultPort = 22337;
+        final String defaultHost = "127.0.0.1";
+        final Socket socket;
 
         try {
-            socket = new Socket(LOCALHOST, PORT);
+            socket = new Socket(defaultHost, defaultPort);
             try {
                 svrIn = new BufferedReader(new InputStreamReader(
                         socket.getInputStream()));
@@ -179,7 +157,7 @@ public final class PokerFrame {
         mainFrame.add(mainPanel);
         mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        mainFrame.setPreferredSize(new Dimension(FRAME_WIDTH, FRAME_HEIGHT));
+        mainFrame.setPreferredSize(new Dimension(frameWidth, frameHeight));
         mainFrame.setLocationByPlatform(true);
         mainFrame.setResizable(false);
         mainFrame.pack();
@@ -187,8 +165,10 @@ public final class PokerFrame {
 
     /**
      * Handle adjustments to Card array following server input.
+     *
+     * @param newCardList array of new cards from server
      */
-    private static void adjustCardArr() {
+    private void adjustCardArr(final ArrayList<String> newCardList) {
         int cardH, cardW, cardX, cardY;
         for (int j = 0; j < cards.length; j++) {
             if (cards[j].toSwitch()) {
@@ -197,7 +177,7 @@ public final class PokerFrame {
                 cardX = cards[j].getX();
                 cardY = cards[j].getY();
                 cards[j] = new Card(
-                        cardX, cardY, cardW, cardH, NEW_CARD_LIST.remove(0));
+                        cardX, cardY, cardW, cardH, newCardList.remove(0));
             }
         }
     }
@@ -217,19 +197,19 @@ public final class PokerFrame {
     /**
      * Handles drawing of cards.
      */
-    private static final class CardPanel extends JPanel {
+    private final class CardPanel extends JPanel {
 
         /**
          * Card panel dimensions. //TODO find a way to intuitively scale this
          */
         private final int widthAdjust = 200, heightAdjust = 150,
-                cardPanelWidth = FRAME_WIDTH - widthAdjust,
-                cardPanelHeight = FRAME_HEIGHT - heightAdjust;
+                cardPanelWidth = frameWidth - widthAdjust,
+                cardPanelHeight = frameHeight - heightAdjust;
 
         /**
          * Card image containers.
          */
-        private static BufferedImage cardFront, cardBack;
+        private BufferedImage cardFront, cardBack;
 
         /**
          * Create images from file, get dimensions, populate card array.
@@ -293,15 +273,15 @@ public final class PokerFrame {
 
         @Override
         public Dimension getPreferredSize() {
-            return new Dimension(FRAME_WIDTH - widthAdjust,
-                    FRAME_HEIGHT - heightAdjust);
+            return new Dimension(frameWidth - widthAdjust,
+                    frameHeight - heightAdjust);
         }
     }
 
     /**
      * Handles all button events for the frame.
      */
-    private static final class ButtonHandler implements ActionListener {
+    private final class ButtonHandler implements ActionListener {
 
         /**
          * Possible commands.
@@ -317,6 +297,7 @@ public final class PokerFrame {
         public void actionPerformed(final ActionEvent e) {
             String cmd = e.getActionCommand();
             if (cmd.equals(switchCmd)) {
+                ArrayList<String> newCardList = new ArrayList<>();
                 numCardsSwitched = 0;
                 for (Card curCard : cards) {
                     if (curCard.isFlipped()) {
@@ -331,17 +312,17 @@ public final class PokerFrame {
                     }
                 }
                 String svrInput;
-                while (NEW_CARD_LIST.size() < numCardsSwitched) {
+                while (newCardList.size() < numCardsSwitched) {
                     try {
                         svrInput = svrIn.readLine();
-                        NEW_CARD_LIST.add(svrInput);
+                        newCardList.add(svrInput);
                     } catch (IOException ie) {
                         System.err.println("Couldn't read from server: " + ie);
                         //DEBUG
                         System.exit(0);
                     }
                 }
-                adjustCardArr();
+                adjustCardArr(newCardList);
                 cardPanel.repaint();
             }
         }
@@ -350,13 +331,13 @@ public final class PokerFrame {
     /**
      * Handles all mouse events for the frame.
      */
-    private static final class MouseHandler implements MouseListener,
+    private final class MouseHandler implements MouseListener,
             MouseMotionListener {
 
         /**
          * Mouse positions.
          */
-        private static int mouseX, mouseY;
+        private int mouseX, mouseY;
 
         @Override
         public void mousePressed(final MouseEvent e) {
