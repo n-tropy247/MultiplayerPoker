@@ -43,6 +43,11 @@ public final class PokerServer {
     private static final ArrayList<String> DECK = new ArrayList<>();
 
     /**
+     * Tracks turn number.
+     */
+    private static int curTurn = 0, clientNum;
+
+    /**
      * Private constructor to avoid instantiation.
      */
     private PokerServer() {
@@ -72,16 +77,15 @@ public final class PokerServer {
         final int defaultPort = 22337;
         int port = getPort(usrInpt, defaultPort);
 
-        int connectionNum = 1;
-        connectionNum = getConnectionNum(usrInpt, connectionNum);
+        clientNum = getConnectionNum(usrInpt, 1);
 
         System.out.println("Port: " + port);
         System.out.println("Local IP: " + localIP);
         System.out.println("Public IP: " + publicIP);
-        System.out.println("Connection number: " + connectionNum);
+        System.out.println("Connection number: " + clientNum);
         try {
             ServerSocket mainSocket = new ServerSocket(port);
-            runThread(connectionNum, mainSocket);
+            runThread(clientNum, mainSocket);
         } catch (IOException e) {
             System.err.println("Unable to open socket: " + e);
             //DEBUG
@@ -111,6 +115,26 @@ public final class PokerServer {
         for (int j = 0; j < standardShuffle; j++) {
             Collections.shuffle(DECK);
         }
+    }
+
+    /**
+     * Increments turn.
+     */
+    public static void nextTurn() {
+        curTurn++;
+        if (curTurn >= clientNum) {
+            curTurn = 0;
+        }
+    }
+
+    /**
+     * Allows client to check if it's its turn.
+     *
+     * @param n number to check
+     * @return true iff client's turn
+     */
+    public static boolean queryTurn(final int n) {
+        return curTurn == n;
     }
 
     /**
@@ -191,10 +215,10 @@ public final class PokerServer {
                         + "connections, or press enter to default to "
                         + defaultNum + ": ");
                 usrInpt = br.readLine();
-                if (usrInpt.matches("^[+-]?\\d+$")) {
+                if (usrInpt.matches("\\d+")) {
                     connectionNum = Integer.parseInt(usrInpt);
-                }
-                if (!usrInpt.equals("")) {
+                    valid = true;
+                } else if (!usrInpt.equals("")) {
                     System.out.print("\nInvalid connection number!");
                 } else {
                     valid = true;
@@ -223,7 +247,7 @@ public final class PokerServer {
         for (int j = 0; j < clients.length; j++) {
             System.out.println("Waiting for connection...");
             try {
-                clients[j] = new ServerConnection();
+                clients[j] = new ServerConnection(j);
                 clients[j].connect(mainSocket.accept());
                 System.out.println("Connection established with client "
                         + (j + 1));

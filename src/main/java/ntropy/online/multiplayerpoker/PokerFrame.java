@@ -63,13 +63,17 @@ public final class PokerFrame {
     private BufferedReader svrIn;
 
     /**
+     * Client's number in game.
+     */
+    private int clientNum;
+
+    /**
      * Output to server.
      */
     private PrintWriter svrOut;
 
     /**
-     * Window dimensions.
-     * TODO make window scalable by user
+     * Window dimensions. TODO make window scalable by user
      */
     private final int frameWidth = 1480, frameHeight = 900;
 
@@ -161,6 +165,11 @@ public final class PokerFrame {
         mainFrame.setLocationByPlatform(true);
         mainFrame.setResizable(false);
         mainFrame.pack();
+        try {
+            clientNum = Integer.parseInt(svrIn.readLine());
+        } catch (IOException e) {
+            System.err.println("Couldn't acquire client number: " + e);
+        }
     }
 
     /**
@@ -297,6 +306,8 @@ public final class PokerFrame {
         public void actionPerformed(final ActionEvent e) {
             String cmd = e.getActionCommand();
             if (cmd.equals(switchCmd)) {
+                System.out.println("Number " + clientNum + " queried "
+                        + PokerServer.queryTurn(clientNum));
                 ArrayList<String> newCardList = new ArrayList<>();
                 numCardsSwitched = 0;
                 for (Card curCard : cards) {
@@ -324,6 +335,7 @@ public final class PokerFrame {
                 }
                 adjustCardArr(newCardList);
                 cardPanel.repaint();
+                PokerServer.nextTurn();
             }
         }
     }

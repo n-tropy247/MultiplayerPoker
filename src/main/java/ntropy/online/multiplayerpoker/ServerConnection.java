@@ -40,9 +40,17 @@ public final class ServerConnection extends Thread {
     private Socket connection;
 
     /**
-     * Constructor for each connection thread.
+     * Client number.
      */
-    public ServerConnection() {
+    private final int number;
+
+    /**
+     * Constructor for each connection thread.
+     *
+     * @param n number given to this client
+     */
+    public ServerConnection(final int n) {
+        number = n;
     }
 
     /**
@@ -59,6 +67,7 @@ public final class ServerConnection extends Thread {
                             connection.getInputStream()));
             PrintWriter clientOutpt = new PrintWriter(
                     connection.getOutputStream(), true);
+            clientOutpt.println(number);
             while (true) {
                 try {
                     numCardsRet = Integer.parseInt(clientInpt.readLine());
@@ -75,9 +84,10 @@ public final class ServerConnection extends Thread {
                     passBack.forEach((String s) -> {
                         clientOutpt.println(s);
                     });
-                    //TODO card staging that adds back cards turned in after the
-                    //current round
-                    //TODO tell each client how many cards current client took
+                    //TODO card staging that adds back cards turned in after
+                    //the current round
+                    //TODO tell each client how many cards current client
+                    //took
                     //TODO improve deck implementation
                 } catch (IOException e) {
                     System.err.println("I/O error with client: " + e);
